@@ -1,0 +1,52 @@
+{
+	"baseUrl": {
+		"development": "http://localhost:8000/api",
+		"staging": "http://3.79.187.25/api",
+		"production": "http://localhost:8000/api"
+	},
+	"credentials": {
+		"email": "example@gmail.com",
+		"password": "Example@123"
+	},
+	"loginDetails": {
+		"route": "/login",
+		"type": "JWT",
+		"token_location": "data.access_token"
+	},
+	"current_pipeline": [
+		{ "endpoint": "/docs" },
+		{
+			"endpoint": "/admin/docs",
+			"method": "POST",
+			"body":  {
+				"files": [
+					{
+						"deadline": "2024-08-29 00:00:00",
+						"event_id": null,
+						"is_template": 0,
+						"stable_id": null,
+						"title": "New title",
+						"type": "information",
+						"uri": "uploads/documents/uri/wbcrc0SMWkTL6WyKaFmD4EM3YL5SPjOaGfzEYpiN.png"
+					}
+				]
+			}
+		},
+		{ "endpoint": "/docs" }
+	],
+	"custom_pipelines": {
+		"horses": [
+			{ "endpoint": "/horses" },
+			{ "endpoint": "/horses/1" }
+		],
+		"riders": [
+			{ "endpoint": "/riders" }
+		],
+		"docs": [
+			{
+				"endpoint": "/docs",
+				"method": "GET"
+			}
+		]
+	}
+}
