@@ -52,7 +52,7 @@ apee-i --file=myfile.json
 ```
 
 ### Follow the given json file structure
-`api.json` put this file wherever you want to test your APIs. A sample file is present [here](https://github.com/IbraheemHaseeb7/apee-i/example/api.json) for you to use.
+`api.json` put this file wherever you want to test your APIs. A sample file is present [here](https://github.com/IbraheemHaseeb7/apee-i/blob/main/example/api.json) for you to use.
 
 
 ```json
