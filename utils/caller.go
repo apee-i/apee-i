@@ -63,7 +63,7 @@ func (fileContents Structure) Hit(structure ApiStructure) ApiResponse {
 
 	// logging result
 	if structure.Method == "POST" {
-		if res.StatusCode == 201 {
+		if res.StatusCode == 201 || res.StatusCode == 200 {
 			fmt.Println(Green + "\n" + structure.Method + " -> " + url + " -> " + strconv.Itoa(res.StatusCode) + " Time: " +
 				elapsedTime.Abs().String() + Reset)
 		} else {

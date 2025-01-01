@@ -1,0 +1,44 @@
+{
+	"baseUrl": {
+		"development": "http://localhost:8000/api",
+		"staging": "http://staging.com/api",
+		"production": "http://production.com/api"
+	},
+	"credentials": {
+		"email": "example@gmail.com",
+		"password": "Example@123"
+	},
+	"loginDetails": {
+		"route": "/login",
+		"type": "JWT",
+		"token_location": "data.access_token"
+	},
+	"current_pipeline": [
+		{ "endpoint": "/test" },
+		{
+			"endpoint": "/test",
+			"method": "POST",
+			"body":  {
+				"name": "John Doe",
+				"email": "johndoe@gmail.com",
+			}
+		}
+	],
+	"custom_pipelines": {
+		"users": [
+			{ "endpoint": "/users" },
+			{ 
+				"endpoint": "/users/1",
+				"method": "PATCH",
+				"body": {
+					"name": "Sara Doe"
+				}
+			}
+		],
+		"test": [
+			{
+				"endpoint": "/test"
+			}
+		]
+	}
+}
