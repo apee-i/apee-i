@@ -63,8 +63,18 @@ apee-i --file=myfile.json
 		"production": "http://production.com/api"
 	},
 	"credentials": {
-		"email": "example@gmail.com",
-		"password": "Example@123"
+		"development": {
+			"email": "example@gmail.com",
+			"password": "Example@123"
+		},
+		"staging": {
+			"email": "example@gmail.com",
+			"password": "Example@123"
+		},
+		"production": {
+			"email": "example@gmail.com",
+			"password": "Example@123"
+		}
 	},
 	"loginDetails": {
 		"route": "/login",
@@ -79,6 +89,10 @@ apee-i --file=myfile.json
 			"body":  {
                 "name": "John Doe",
                 "email": "johndoe@gmail.com",
+			},
+			"expectedStatusCode": 201,
+			"headers": {
+				"X-HEADER": "SOME_VALUE"
 			}
 		}
 	],
@@ -110,7 +124,7 @@ apee-i --file=myfile.json
 2. Currently it only supports JWT auth
 3. Token location is the field where the access token will be available in JSON response
 
-### Select environement by
+### Select environement and credentials by
 
 *NOTE*: Default environement is `development` if you dont provide with the flag
 

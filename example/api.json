@@ -5,8 +5,18 @@
 		"production": "http://production.com/api"
 	},
 	"credentials": {
-		"email": "example@gmail.com",
-		"password": "Example@123"
+		"development": {
+			"email": "example@gmail.com",
+			"password": "Example@123"
+		},
+		"staging": {
+			"email": "example@gmail.com",
+			"password": "Example@123"
+		},
+		"production": {
+			"email": "example@gmail.com",
+			"password": "Example@123"
+		}
 	},
 	"loginDetails": {
 		"route": "/login",
@@ -19,8 +29,12 @@
 			"endpoint": "/test",
 			"method": "POST",
 			"body":  {
-				"name": "John Doe",
-				"email": "johndoe@gmail.com",
+                "name": "John Doe",
+                "email": "johndoe@gmail.com",
+			},
+			"expectedStatusCode": 201,
+			"headers": {
+				"X-HEADER": "SOME_VALUE"
 			}
 		}
 	],
@@ -28,12 +42,12 @@
 		"users": [
 			{ "endpoint": "/users" },
 			{ 
-				"endpoint": "/users/1",
-				"method": "PATCH",
-				"body": {
-					"name": "Sara Doe"
-				}
-			}
+                "endpoint": "/users/1",
+                "method": "PATCH",
+                "body": {
+                    "name": "Sara Doe"
+                }
+            }
 		],
 		"test": [
 			{

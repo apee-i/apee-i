@@ -8,8 +8,9 @@ import (
 )
 
 type Credentials struct {
-	Email string `json:"email"`
-	Password string `json:"password"`
+	Development any `json:"development"`
+	Staging any `json:"staging"`
+	Production any `json:"production"`
 }
 
 type Environments struct {
@@ -27,7 +28,10 @@ type LoginDetails struct {
 type PipelineBody struct {
 	Method string `json:"method"`
 	Endpoint string `json:"endpoint"`
-	Body any `json:"body"`
+	Body Credentials `json:"body"`
+	Headers any `json:"headers"`
+	ExpectedStatusCode int `json:"expectedStatusCode"`
+	ExpectedBody any `json:"expectedBody"`
 }
 
 type Structure struct {
@@ -37,6 +41,7 @@ type Structure struct {
 	PipelineBody []PipelineBody `json:"current_pipeline"`
 	CustomPipelines map[string]interface{} `json:"custom_pipelines"`
 	ActiveUrl string
+	ActiveEnvironment string
 }
 
 func (fileContents *Structure) ReadInstructions(filepath string) error {

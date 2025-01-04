@@ -26,22 +26,25 @@ func main() {
 	if err != nil { fmt.Println(err.Error()); return }
 
 	// creating options for various purposes
-	envSelector := map[string]interface{} {
-		"development": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Development},
-		"staging": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Staging},
-		"production": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Production},
+	envSelector := map[string]func() {
+		"development": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Development; fileContents.ActiveEnvironment = "development" },
+		"staging": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Staging; fileContents.ActiveEnvironment = "staging" },
+		"production": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Production; fileContents.ActiveEnvironment = "production" },
 	}
-	pipelineSelector := map[string]interface{}{
+	pipelineSelector := map[string]interface{} {
 		"current": fileContents.CallCurrentPipeline,
 		"all": fileContents.CallCustomPipelines,
 		"custom": fileContents.CallSingleCustomPipeline,
 	}
 
 	// selecting environment and calling selected pipeline by the user
-	envSelector[*env].(func())()
+	if action, exists := envSelector[*env]; exists { action()
+	} else { fmt.Println("No such environment exists!!!"); return }
+
 	fileContents.Login()
 	
 	if *pipeline == "custom" { fileContents.CallSingleCustomPipeline(*customPipelineName); return }
-	pipelineSelector[*pipeline].(func())()
+	if action, exists := pipelineSelector[*pipeline]; exists { action.(func())()
+	} else { fmt.Println("No such pipeline exists!!!"); return }
 }
 

@@ -7,16 +7,18 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/Jeffail/gabs/v2"
 )
 
 type ApiStructure struct {
-	Method string `default:"GET"`
+	Method string
 	Endpoint string 
 	Body any
+	ExpectedStatusCode int
+	ExpectedBody any
+	Headers any
 }
 
 type ApiResponse struct {
@@ -24,7 +26,7 @@ type ApiResponse struct {
 	Body *gabs.Container
 }
 
-func (fileContents Structure) Hit(structure ApiStructure) ApiResponse {
+func (fileContents Structure) Hit(structure ApiStructure) (ApiResponse, error) {
 
 	startTime := time.Now()
 	if structure.Method == "" { structure.Method = "GET" }
@@ -34,57 +36,48 @@ func (fileContents Structure) Hit(structure ApiStructure) ApiResponse {
 
 	// forming request body for login in json format
 	jsonCredentials, err := json.Marshal(structure.Body)
-	if err != nil { fmt.Println("Could not convert into json") }
+	if err != nil { return ApiResponse{}, err }
 
 	// forming HTTP request
 	req, err := http.NewRequest(structure.Method, url, bytes.NewBuffer(jsonCredentials))
-	if err != nil { fmt.Println(err.Error()) }
+	if err != nil { return ApiResponse{}, err }
 
 	// adding appropriate headers
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "bearer" + fileContents.LoginDetails.Token)
 
+	// adding custom headers from the user
+	if structure.Headers != nil {
+		for key, value := range structure.Headers.(map[string]interface{}) {
+			req.Header.Set(key, value.(string))
+		}
+	}
+
 	// hitting the server with the request
 	res, err := http.DefaultClient.Do(req)
-	if err != nil { fmt.Println(err.Error()) }
+	if err != nil { return ApiResponse{}, err }
 
 	// closing body when function is popped from stack
 	defer res.Body.Close()
 
 	// reading the body
 	body, err := io.ReadAll(res.Body)
-	if err != nil { fmt.Println(err.Error()) }
+	if err != nil { return ApiResponse{}, err }
 
 	// parsing body into nice json
 	data, err := gabs.ParseJSON(body)
-	if err != nil { fmt.Println(err.Error()) }
+	if err != nil { return ApiResponse{}, err }
 
 	elapsedTime := time.Since(startTime)
 
-	// logging result
-	if structure.Method == "POST" {
-		if res.StatusCode == 201 || res.StatusCode == 200 {
-			fmt.Println(Green + "\n" + structure.Method + " -> " + url + " -> " + strconv.Itoa(res.StatusCode) + " Time: " +
-				elapsedTime.Abs().String() + Reset)
-		} else {
-			fmt.Println(Red + "\n" + structure.Method + " -> " + url + " -> " + strconv.Itoa(res.StatusCode) + " Time: " +
-				elapsedTime.Abs().String() + Reset)
-		}
-	} else {
-		if res.StatusCode == 200 {
-			fmt.Println(Green + "\n" + structure.Method + " -> " + url + " -> " + strconv.Itoa(res.StatusCode) + " Time: " +
-				elapsedTime.Abs().String() + Reset)
-		} else {
-			fmt.Println(Red + "\n" + structure.Method + " -> " + url + " -> " + strconv.Itoa(res.StatusCode) + " Time: " +
-				elapsedTime.Abs().String() + Reset)
-		}
-	}
+	// logging result - function stored in `helper.go`
+	ResponseLogger(structure, res, url, elapsedTime)
 	
 	// returning response
 	return ApiResponse{
 		StatusCode: res.StatusCode,
 		Body: data,
-	}
+	}, nil
 }
 
 func (fileContents* Structure) Login() {
@@ -110,9 +103,10 @@ func (fileContents* Structure) Login() {
 	// getting data from /me api
 	fmt.Println(Blue + "- Token found..." + Reset)
 	fmt.Println(Blue + "- Testing for valid token..." + Reset)
-	tokenCheckResponse:= fileContents.Hit(ApiStructure{
+	tokenCheckResponse, err:= fileContents.Hit(ApiStructure{
 		Endpoint: "/me",
 	})
+	if err != nil {fmt.Println(err.Error()); fmt.Println(Red + "Could not hit API, try again..." + Reset); return }
 
 	// if request fails with unauthorized, generate new token
 	if tokenCheckResponse.StatusCode == 401 {
@@ -125,17 +119,20 @@ func (fileContents* Structure) Login() {
 }
 
 func GetAndStoreToken(fileContents* Structure) {
+	
+	credentials := fileContents.Credentials.Development
+	if fileContents.ActiveEnvironment == "development" { credentials = fileContents.Credentials.Development }
+	if fileContents.ActiveEnvironment == "staging" { credentials = fileContents.Credentials.Staging }
+	if fileContents.ActiveEnvironment == "production" { credentials = fileContents.Credentials.Production }
 
 	fmt.Println(Green + "- Generating and storing new token..." + Reset)
 	// hitting login api with credentials
-	tokenGetResponse := fileContents.Hit(ApiStructure{
+	tokenGetResponse, err := fileContents.Hit(ApiStructure{
 		Endpoint: "/login",
 		Method: "POST",
-		Body: map[string]string{
-			"email": fileContents.Credentials.Email,
-			"password": fileContents.Credentials.Password,
-		},
+		Body: credentials,
 	})
+	if err != nil { fmt.Println(Red + "Could not hit API, try again..." + Reset); return }
 
 	// fetching token form the json response from the given structure in json file
 	token, _ := tokenGetResponse.Body.Path(fileContents.LoginDetails.TokenLocation).Data().(string)
@@ -149,11 +146,14 @@ func (fileContents* Structure) CallCurrentPipeline() {
 
 	fmt.Println(Blue + "\nCalling All API in current pipeline\n" + Reset)
 	for i := range fileContents.PipelineBody {
-		res := fileContents.Hit(ApiStructure{
+		res, err := fileContents.Hit(ApiStructure{
 			Endpoint: fileContents.PipelineBody[i].Endpoint,
 			Method: fileContents.PipelineBody[i].Method,
 			Body: fileContents.PipelineBody[i].Body,
+			ExpectedStatusCode: fileContents.PipelineBody[i].ExpectedStatusCode,
+			Headers: fileContents.PipelineBody[i].Headers,
 		})
+		if err != nil { fmt.Println(Red + "Could not hit API, try again..." + Reset); return }
 
 		fmt.Println(res.Body.StringIndent("", "  "))
 	}
@@ -171,12 +171,18 @@ func (fileContents* Structure) CallCustomPipelines() {
 			data := value.Children()[i].ChildrenMap()
 
 			if data["method"].Data() == nil { data["method"] = gabs.Wrap("GET") }
+			if data["expectedStatusCode"].Data() == nil { 
+				var expectedStatusCode float64; data["expectedStatusCode"] = gabs.Wrap(expectedStatusCode)
+			}
 
-			res := fileContents.Hit(ApiStructure{
+			res, err := fileContents.Hit(ApiStructure{
 				Endpoint: data["endpoint"].Data().(string),
 				Method: data["method"].Data().(string),
 				Body: data["body"].Data(),
+				ExpectedStatusCode: int(data["expectedStatusCode"].Data().(float64)),
+				Headers: data["headers"].Data(),
 			})
+			if err != nil { fmt.Println(Red + "Could not hit API, try again..." + Reset); return }
 
 			fmt.Println(res.Body.StringIndent("", "  "))
 		}
@@ -198,12 +204,18 @@ func (fileContents* Structure) CallSingleCustomPipeline(pipelineKey string) {
 				data := value.Children()[i].ChildrenMap()
 
 				if data["method"].Data() == nil { data["method"] = gabs.Wrap("GET") }
+				if data["expectedStatusCode"].Data() == nil { 
+					var expectedStatusCode float64; data["expectedStatusCode"] = gabs.Wrap(expectedStatusCode)
+				}
 
-				res := fileContents.Hit(ApiStructure{
+				res, err := fileContents.Hit(ApiStructure{
 					Endpoint: data["endpoint"].Data().(string),
 					Method: data["method"].Data().(string),
 					Body: data["body"].Data(),
+					ExpectedStatusCode: int(data["expectedStatusCode"].Data().(float64)),
+					Headers: data["headers"].Data(),
 				})
+				if err != nil { fmt.Println(Red + "Could not hit API, try again..." + Reset); return }
 
 				fmt.Println(res.Body.StringIndent("", "  "))
 			}
