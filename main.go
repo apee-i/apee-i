@@ -3,16 +3,44 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/IbraheemHaseeb7/apee-i/cmd"
 	"github.com/IbraheemHaseeb7/apee-i/cmd/json"
 	"github.com/IbraheemHaseeb7/apee-i/cmd/yaml"
+	"github.com/IbraheemHaseeb7/apee-i/utils"
 )
 
 func main() {
+	// navigating for sub-commands
+	if len(os.Args) > 1 {
+
+		subCommand := strings.Split(os.Args[1], "=")[0]
+		availableCommands := map[string]func() bool {
+			"update": func() bool {
+				cmd.Update(); return false
+			},
+			"": func() bool { return true },
+			"-help": func() bool { cmd.Help();return false },
+			"--help": func() bool { cmd.Help();return false },
+			"-file": func() bool { return true },
+			"--file": func() bool { return true },
+			"-env": func() bool { return true },
+			"--env": func() bool { return true },
+			"-pipeline": func() bool { return true },
+			"--pipeline": func() bool { return true },
+			"-name": func() bool { return true },
+			"--name": func() bool { return true },
+		}
+
+		if action, exists := availableCommands[subCommand]; exists { if !action() {return};
+		} else { fmt.Println("No such subcommand exists!!!\n\n\tTry "+ utils.Green +"apee-i --help"+utils.Reset+" to see all commands\n"); return }
+	}
+
 	// creating flags to be passed into the program
+	// help := flag.String("help", "", "")
 	file := flag.String("file", "api.json", "file for getting all the api information")
 	env := flag.String("env", "development", "environment in which data is to be tested")
 	pipeline := flag.String("pipeline", "current", "whether to run current, all custom or selected custom pipeline")
