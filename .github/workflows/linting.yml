@@ -23,5 +23,8 @@ jobs:
 
       - name: Lint the project
         run: |
-          golint ./...
+          if ! golint ./...; then
+            echo "Go lint has found issues, please fix the changes for successful merge"
+            exit 1
+          fi
 
