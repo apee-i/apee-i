@@ -1,8 +1,8 @@
 name: Lint Code
 
 on:
-  push:
-    branches: [ main, lint ]
+  pull_request:
+    branches: main
 
 jobs:
   lint:
