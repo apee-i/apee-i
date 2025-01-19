@@ -1,4 +1,3 @@
-
 # Apee-i
 
 Command Line based api-tester utility completely written in [Golang](https://go.dev)
