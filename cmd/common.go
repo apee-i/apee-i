@@ -20,6 +20,8 @@ type ApiResponse struct {
 	Body       *gabs.Container
 }
 
+// Credentials contains all the login properties
+// with respect to the 3 different environments
 type Credentials struct {
 	Development any `yaml:"development" json:"development"`
 	Staging any `yaml:"staging" json:"staging"`
