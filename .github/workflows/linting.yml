@@ -23,8 +23,12 @@ jobs:
 
       - name: Lint the project
         run: |
-          if ! golint ./...; then
-            echo "Go lint has found issues, please fix the changes for successful merge"
+          output=$(golint ./...)
+          if [ -n "$output" ]; then
+            echo "$output"
+            echo "golint found issues. Please fix them before merging."
             exit 1
+          else
+            echo "No linting issues found."
           fi
 
