@@ -25,6 +25,8 @@ func main() {
 			"": func() bool { return true },
 			"-help": func() bool { cmd.Help();return false },
 			"--help": func() bool { cmd.Help();return false },
+			"-version": func() bool { cmd.Version();return false },
+			"--version": func() bool { cmd.Version();return false },
 			"-file": func() bool { return true },
 			"--file": func() bool { return true },
 			"-env": func() bool { return true },
