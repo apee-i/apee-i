@@ -4,10 +4,12 @@ import (
 	"fmt"
 )
 
+// Update function updates the utility to the latest version
 func Update() {
 
 }
 
+// Help function lists down all the commands and flags with their functionalities
 func Help() {
 	subCommands := map[string]string{
 		"update": "\t - Updates the `apee-i` utility to the latest version",
@@ -32,4 +34,9 @@ func Help() {
 	for key, value := range flags {
 		fmt.Println(key, value)
 	}
+}
+
+// Vesrion fetches and displays the current running version of the Application
+func Version() {
+	fmt.Println("1.0.0")
 }

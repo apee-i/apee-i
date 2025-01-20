@@ -14,7 +14,8 @@ import (
 	"github.com/Jeffail/gabs/v2"
 )
 
-func Hit(fileContents *cmd.Structure, structure cmd.ApiStructure) (cmd.ApiResponse, error) {
+// Hit acts as an HTTP client and hits a rest based request
+func Hit(fileContents *cmd.Structure, structure cmd.APIStructure) (cmd.APIResponse, error) {
 
 	startTime := time.Now()
 	if structure.Method == "" { structure.Method = "GET" }
@@ -24,11 +25,11 @@ func Hit(fileContents *cmd.Structure, structure cmd.ApiStructure) (cmd.ApiRespon
 
 	// forming request body for login in json format
 	jsonCredentials, err := json.Marshal(structure.Body)
-	if err != nil { return cmd.ApiResponse{}, err }
+	if err != nil { return cmd.APIResponse{}, err }
 
 	// forming HTTP request
 	req, err := http.NewRequest(structure.Method, url, bytes.NewBuffer(jsonCredentials))
-	if err != nil { return cmd.ApiResponse{}, err }
+	if err != nil { return cmd.APIResponse{}, err }
 
 	// adding appropriate headers
 	req.Header.Set("Content-Type", "application/json")
@@ -43,18 +44,18 @@ func Hit(fileContents *cmd.Structure, structure cmd.ApiStructure) (cmd.ApiRespon
 
 	// hitting the server with the request
 	res, err := http.DefaultClient.Do(req)
-	if err != nil { return cmd.ApiResponse{}, err }
+	if err != nil { return cmd.APIResponse{}, err }
 
 	// closing body when function is popped from stack
 	defer res.Body.Close()
 
 	// reading the body
 	body, err := io.ReadAll(res.Body)
-	if err != nil { return cmd.ApiResponse{}, err }
+	if err != nil { return cmd.APIResponse{}, err }
 
 	// parsing body into nice json
 	data, err := gabs.ParseJSON(body)
-	if err != nil { return cmd.ApiResponse{}, err }
+	if err != nil { return cmd.APIResponse{}, err }
 
 	elapsedTime := time.Since(startTime)
 
@@ -62,7 +63,7 @@ func Hit(fileContents *cmd.Structure, structure cmd.ApiStructure) (cmd.ApiRespon
 	utils.ResponseLogger(structure, res, url, elapsedTime)
 	
 	// returning response
-	return cmd.ApiResponse{
+	return cmd.APIResponse{
 		StatusCode: res.StatusCode,
 		Body: data,
 	}, nil
@@ -91,7 +92,7 @@ func (r *JSONReader) Login(fileContents *cmd.Structure) {
 	// getting data from /me api
 	fmt.Println(utils.Blue + "- Token found..." + utils.Reset)
 	fmt.Println(utils.Blue + "- Testing for valid token..." + utils.Reset)
-	tokenCheckResponse, err:= Hit(fileContents, cmd.ApiStructure{
+	tokenCheckResponse, err:= Hit(fileContents, cmd.APIStructure{
 		Endpoint: "/me",
 	})
 	if err != nil {fmt.Println(err.Error()); fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset); return }
@@ -115,7 +116,7 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Green + "- Generating and storing new token..." + utils.Reset)
 	// hitting login api with credentials
-	tokenGetResponse, err := Hit(fileContents, cmd.ApiStructure{
+	tokenGetResponse, err := Hit(fileContents, cmd.APIStructure{
 		Endpoint: "/login",
 		Method: "POST",
 		Body: credentials,
@@ -134,7 +135,7 @@ func (r* JSONReader) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
 	for i := range fileContents.PipelineBody {
-		res, err := Hit(fileContents, cmd.ApiStructure{
+		res, err := Hit(fileContents, cmd.APIStructure{
 			Endpoint: fileContents.PipelineBody[i].Endpoint,
 			Method: fileContents.PipelineBody[i].Method,
 			Body: fileContents.PipelineBody[i].Body,
@@ -163,7 +164,7 @@ func (r *JSONReader) CallCustomPipelines(fileContents *cmd.Structure) {
 				var expectedStatusCode float64; data["expectedStatusCode"] = gabs.Wrap(expectedStatusCode)
 			}
 
-			res, err := Hit(fileContents, cmd.ApiStructure{
+			res, err := Hit(fileContents, cmd.APIStructure{
 				Endpoint: data["endpoint"].Data().(string),
 				Method: data["method"].Data().(string),
 				Body: data["body"].Data(),
@@ -193,7 +194,7 @@ func (r* JSONReader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipel
 			var expectedStatusCode float64; data["expectedStatusCode"] = gabs.Wrap(expectedStatusCode)
 		}
 
-		res, err := Hit(fileContents, cmd.ApiStructure{
+		res, err := Hit(fileContents, cmd.APIStructure{
 			Endpoint: data["endpoint"].Data().(string),
 			Method: data["method"].Data().(string),
 			Body: data["body"].Data(),
