@@ -6,7 +6,7 @@ import (
 	"github.com/Jeffail/gabs/v2"
 )
 
-type ApiStructure struct {
+type APIStructure struct {
 	Method             string
 	Endpoint           string
 	Body               any
@@ -15,7 +15,7 @@ type ApiStructure struct {
 	Headers            any
 }
 
-type ApiResponse struct {
+type APIResponse struct {
 	StatusCode int
 	Body       *gabs.Container
 }
@@ -67,7 +67,7 @@ type FileReaderStrategy interface {
 	CallSingleCustomPipeline(fileContents *Structure, pipelineKey string)
 }
 
-// Context for reading file instructions
+// FileReaderContext for reading file instructions
 type FileReaderContext struct {
 	strategy FileReaderStrategy
 }
@@ -96,21 +96,21 @@ func (c *FileReaderContext) Login(fileContents *Structure) {
 	c.strategy.Login(fileContents)
 }
 
-// Call Current pipeline delegates the reading task to the strategy
+// CallCurrentPipeline call Current pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallCurrentPipeline(fileContents *Structure) {
 	if c.strategy == nil { fmt.Println("strategy not set"); return }
 
 	c.strategy.CallCurrentPipeline(fileContents)
 }
 
-// Call All pipeline delegates the reading task to the strategy
+// CallCustomPipelines call custom pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallCustomPipelines(fileContents *Structure) {
 	if c.strategy == nil { fmt.Println("strategy not set"); return }
 
 	c.strategy.CallCustomPipelines(fileContents)
 }
 
-// Call All pipeline delegates the reading task to the strategy
+// CallSingleCustomPipeline calls All pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallSingleCustomPipeline(fileContents *Structure, pipelineKey string) {
 	if c.strategy == nil { fmt.Println("strategy not set"); return }
 
