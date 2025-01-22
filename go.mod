@@ -1,4 +1,4 @@
-module github.com/IbraheemHaseeb7/apee-i
+module github.com/apee-i/apee-i
 
 go 1.23.1
 
