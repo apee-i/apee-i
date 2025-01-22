@@ -59,8 +59,8 @@ func main() {
 	if err != nil { fmt.Println(err.Error()); return }
 
 	// choosing the file reader according to file type
-	if format == "yaml" { fileContext.SetStrategy(&yaml.YAMLReader{})
-	} else if format == "json" { fileContext.SetStrategy(&json.JSONReader{})
+	if format == "yaml" { fileContext.SetStrategy(&yaml.Reader{})
+	} else if format == "json" { fileContext.SetStrategy(&json.Reader{})
 	} else { fmt.Println("Invalid File format!!"); return }
 
 	// calling the instructions reader
@@ -69,9 +69,9 @@ func main() {
 
 	// creating options for various purposes
 	envSelector := map[string]func() {
-		"development": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Development; fileContents.ActiveEnvironment = "development" },
-		"staging": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Staging; fileContents.ActiveEnvironment = "staging" },
-		"production": func() {fileContents.ActiveUrl = fileContents.BaseUrl.Production; fileContents.ActiveEnvironment = "production" },
+		"development": func() {fileContents.ActiveURL = fileContents.BaseURL.Development; fileContents.ActiveEnvironment = "development" },
+		"staging": func() {fileContents.ActiveURL = fileContents.BaseURL.Staging; fileContents.ActiveEnvironment = "staging" },
+		"production": func() {fileContents.ActiveURL = fileContents.BaseURL.Production; fileContents.ActiveEnvironment = "production" },
 	}
 	pipelineSelector := map[string]any {
 		"current": fileContext.CallCurrentPipeline,

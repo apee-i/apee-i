@@ -10,7 +10,8 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
-func ResponseLogger(structure cmd.ApiStructure, res *http.Response, url string, elapsedTime time.Duration) {
+// ResponseLogger is used to print out the API response in a nice green or red colored table for easier read
+func ResponseLogger(structure cmd.APIStructure, res *http.Response, url string, elapsedTime time.Duration) {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
@@ -46,6 +47,6 @@ func ResponseLogger(structure cmd.ApiStructure, res *http.Response, url string, 
 
 }
 
-func ValidateExpectedBody() {
-
-}
+// func ValidateExpectedBody() {
+//
+// }

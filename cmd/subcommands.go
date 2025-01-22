@@ -36,7 +36,7 @@ func Help() {
 	}
 }
 
-// Vesrion fetches and displays the current running version of the Application
+// Version fetches and displays the current running version of the Application
 func Version() {
 	fmt.Println("1.0.0")
 }
