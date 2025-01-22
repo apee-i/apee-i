@@ -6,6 +6,7 @@ import (
 	"github.com/Jeffail/gabs/v2"
 )
 
+// APIStructure defines all the elements that a pipeline body can contain
 type APIStructure struct {
 	Method             string
 	Endpoint           string
@@ -15,6 +16,7 @@ type APIStructure struct {
 	Headers            any
 }
 
+// APIResponse defines all the elements that a request response will contain
 type APIResponse struct {
 	StatusCode int
 	Body       *gabs.Container
@@ -28,18 +30,26 @@ type Credentials struct {
 	Production any `yaml:"production" json:"production"`
 }
 
+// Environments are all the different envs that user
+// could mention in defining baseUrl and credentials
 type Environments struct {
 	Development string `yaml:"development" json:"development"`
 	Staging string `yaml:"staging" json:"staging"`
 	Production string `yaml:"production" json:"production"`
 }
 
+// LoginDetails are used to tell the program
+// 1. which API to hit
+// 2. what type of auth is it
+// 3. where is the token found in response
 type LoginDetails struct {
 	Route string `yaml:"route" json:"route"`
 	TokenLocation string `yaml:"token_location" json:"token_location"`
 	Token string 
 }
 
+// PipelineBody are all the elements that are sent by the
+// user from the configuration file
 type PipelineBody struct {
 	Method string `yaml:"method" json:"method"`
 	Endpoint string `yaml:"endpoint" json:"endpoint"`
@@ -49,16 +59,20 @@ type PipelineBody struct {
 	ExpectedBody any `yaml:"expectedBody" json:"expectedBody"`
 }
 
+// Structure defines the overall structure of the json or yaml
+// configuration file
 type Structure struct {
-	BaseUrl Environments `yaml:"baseUrl" json:"baseUrl"`
+	BaseURL Environments `yaml:"baseUrl" json:"baseUrl"`
 	Credentials Credentials `yaml:"credentials" json:"credentials"`
 	LoginDetails LoginDetails `yaml:"loginDetails" json:"loginDetails"`
 	PipelineBody []PipelineBody `yaml:"current_pipeline" json:"current_pipeline"`
 	CustomPipelines map[string]interface{} `yaml:"custom_pipelines" json:"custom_pipelines"`
-	ActiveUrl string
+	ActiveURL string
 	ActiveEnvironment string
 }
 
+// FileReaderStrategy allows the program to change it's behaviour
+// based on file type. It follows the strategy design pattern
 type FileReaderStrategy interface {
 	ReadInstructions(filepath string) (*Structure, error)
 	Login(fileContents *Structure)
