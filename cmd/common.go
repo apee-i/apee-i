@@ -6,7 +6,8 @@ import (
 	"github.com/Jeffail/gabs/v2"
 )
 
-type ApiStructure struct {
+// APIStructure defines all the elements that a pipeline body can contain
+type APIStructure struct {
 	Method             string
 	Endpoint           string
 	Body               any
@@ -15,7 +16,8 @@ type ApiStructure struct {
 	Headers            any
 }
 
-type ApiResponse struct {
+// APIResponse defines all the elements that a request response will contain
+type APIResponse struct {
 	StatusCode int
 	Body       *gabs.Container
 }
@@ -28,18 +30,26 @@ type Credentials struct {
 	Production any `yaml:"production" json:"production"`
 }
 
+// Environments are all the different envs that user
+// could mention in defining baseUrl and credentials
 type Environments struct {
 	Development string `yaml:"development" json:"development"`
 	Staging string `yaml:"staging" json:"staging"`
 	Production string `yaml:"production" json:"production"`
 }
 
+// LoginDetails are used to tell the program
+// 1. which API to hit
+// 2. what type of auth is it
+// 3. where is the token found in response
 type LoginDetails struct {
 	Route string `yaml:"route" json:"route"`
 	TokenLocation string `yaml:"token_location" json:"token_location"`
 	Token string 
 }
 
+// PipelineBody are all the elements that are sent by the
+// user from the configuration file
 type PipelineBody struct {
 	Method string `yaml:"method" json:"method"`
 	Endpoint string `yaml:"endpoint" json:"endpoint"`
@@ -49,16 +59,20 @@ type PipelineBody struct {
 	ExpectedBody any `yaml:"expectedBody" json:"expectedBody"`
 }
 
+// Structure defines the overall structure of the json or yaml
+// configuration file
 type Structure struct {
-	BaseUrl Environments `yaml:"baseUrl" json:"baseUrl"`
+	BaseURL Environments `yaml:"baseUrl" json:"baseUrl"`
 	Credentials Credentials `yaml:"credentials" json:"credentials"`
 	LoginDetails LoginDetails `yaml:"loginDetails" json:"loginDetails"`
 	PipelineBody []PipelineBody `yaml:"current_pipeline" json:"current_pipeline"`
 	CustomPipelines map[string]interface{} `yaml:"custom_pipelines" json:"custom_pipelines"`
-	ActiveUrl string
+	ActiveURL string
 	ActiveEnvironment string
 }
 
+// FileReaderStrategy allows the program to change it's behaviour
+// based on file type. It follows the strategy design pattern
 type FileReaderStrategy interface {
 	ReadInstructions(filepath string) (*Structure, error)
 	Login(fileContents *Structure)
@@ -67,7 +81,7 @@ type FileReaderStrategy interface {
 	CallSingleCustomPipeline(fileContents *Structure, pipelineKey string)
 }
 
-// Context for reading file instructions
+// FileReaderContext for reading file instructions
 type FileReaderContext struct {
 	strategy FileReaderStrategy
 }
@@ -96,21 +110,21 @@ func (c *FileReaderContext) Login(fileContents *Structure) {
 	c.strategy.Login(fileContents)
 }
 
-// Call Current pipeline delegates the reading task to the strategy
+// CallCurrentPipeline call Current pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallCurrentPipeline(fileContents *Structure) {
 	if c.strategy == nil { fmt.Println("strategy not set"); return }
 
 	c.strategy.CallCurrentPipeline(fileContents)
 }
 
-// Call All pipeline delegates the reading task to the strategy
+// CallCustomPipelines call custom pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallCustomPipelines(fileContents *Structure) {
 	if c.strategy == nil { fmt.Println("strategy not set"); return }
 
 	c.strategy.CallCustomPipelines(fileContents)
 }
 
-// Call All pipeline delegates the reading task to the strategy
+// CallSingleCustomPipeline calls All pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallSingleCustomPipeline(fileContents *Structure, pipelineKey string) {
 	if c.strategy == nil { fmt.Println("strategy not set"); return }
 

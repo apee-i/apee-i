@@ -9,9 +9,12 @@ import (
 	y "gopkg.in/yaml.v3"
 )
 
-type YAMLReader struct {}
+// Reader purpose is just to allow the programmer to make selection for YAML
+type Reader struct {}
 
-func (r *YAMLReader) ReadInstructions(filepath string) (*cmd.Structure, error) {
+// ReadInstructions decodes and stores all the instructions from the configuration
+// file in the state of the program
+func (r *Reader) ReadInstructions(filepath string) (*cmd.Structure, error) {
 	
 	file, err := os.Open(filepath)
 	if err != nil { return &cmd.Structure{}, fmt.Errorf("Could not open file") }

@@ -21,7 +21,7 @@ func Hit(fileContents *cmd.Structure, structure cmd.APIStructure) (cmd.APIRespon
 	if structure.Method == "" { structure.Method = "GET" }
 
 	// forming complete url with endpoint
-	url := fileContents.ActiveUrl + structure.Endpoint
+	url := fileContents.ActiveURL + structure.Endpoint
 
 	// forming request body for login in json format
 	jsonCredentials, err := json.Marshal(structure.Body)
@@ -69,7 +69,8 @@ func Hit(fileContents *cmd.Structure, structure cmd.APIStructure) (cmd.APIRespon
 	}, nil
 }
 
-func (r *JSONReader) Login(fileContents *cmd.Structure) {
+// Login function logs the user in based on the credentials
+func (r *Reader) Login(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Green + "- Looking for token..." + utils.Reset)
 	// checking if token exists in the file 
@@ -107,6 +108,8 @@ func (r *JSONReader) Login(fileContents *cmd.Structure) {
 	fmt.Println(utils.Green + "\nValid token found!!\n" + utils.Reset)
 }
 
+// GetAndStoreToken is a helper function that simply gets the token 
+// from the response and store it into token.txt file
 func GetAndStoreToken(fileContents *cmd.Structure) {
 	
 	credentials := fileContents.Credentials.Development
@@ -131,7 +134,8 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 	fileContents.LoginDetails.Token = token
 }
 
-func (r* JSONReader) CallCurrentPipeline(fileContents *cmd.Structure) {
+// CallCurrentPipeline calls the current pipeline APIs endpoints in a sequence
+func (r* Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
 	for i := range fileContents.PipelineBody {
@@ -148,7 +152,8 @@ func (r* JSONReader) CallCurrentPipeline(fileContents *cmd.Structure) {
 	}
 }
 
-func (r *JSONReader) CallCustomPipelines(fileContents *cmd.Structure) {
+// CallCustomPipelines calls all the custom pipelines APIs endpoints
+func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 	bytesData, err := json.Marshal(fileContents.CustomPipelines)
 	jsonObj, err := gabs.ParseJSON(bytesData)
 	if err != nil { fmt.Println(err.Error()); return }
@@ -178,7 +183,8 @@ func (r *JSONReader) CallCustomPipelines(fileContents *cmd.Structure) {
 	}
 }
 
-func (r* JSONReader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineKey string) {
+// CallSingleCustomPipeline calls a single custom pipeline in a sequence
+func (r* Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineKey string) {
 
 	bytesData, err := json.Marshal(fileContents.CustomPipelines)
 	jsonObj, err := gabs.ParseJSON(bytesData)
