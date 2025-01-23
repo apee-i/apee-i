@@ -143,18 +143,21 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Green + "- Generating and storing new token..." + utils.Reset)
 	// hitting login api with credentials
-	tokenGetResponse, err := Hit(fileContents, cmd.PipelineBody{
-		Endpoint: "/login",
+
+	loginDetails := cmd.NewLoginDetails(&fileContents.LoginDetails)
+	pipelineBody := cmd.NewPipelineBody(&cmd.PipelineBody{
+		Endpoint: loginDetails.Route,
 		Method:   "POST",
 		Body:     credentials,
 	})
+	tokenGetResponse, err := Hit(fileContents, *pipelineBody)
 	if err != nil {
 		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 		return
 	}
 
 	// fetching token form the json response from the given structure in json file
-	token, _ := tokenGetResponse.Body.Path(fileContents.LoginDetails.TokenLocation).Data().(string)
+	token, _ := tokenGetResponse.Body.Path(loginDetails.TokenLocation).Data().(string)
 
 	// storing token in the file and in app state
 	os.WriteFile("token.txt", []byte(token), 0633)

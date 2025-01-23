@@ -83,7 +83,7 @@ func main() {
 	// calling the instructions reader
 	fileContents, err := fileContext.ReadInstructions(filePath)
 	if err != nil {
-		fmt.Println("Could not read file")
+		fmt.Println(err.Error())
 		return
 	}
 

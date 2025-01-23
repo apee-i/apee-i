@@ -20,9 +20,9 @@ type Credentials struct {
 	Production  any `yaml:"production" json:"production"`
 }
 
-// Environments are all the different envs that user
+// Environment are all the different envs that user
 // could mention in defining baseUrl and credentials
-type Environments struct {
+type Environment struct {
 	Development string `yaml:"development" json:"development"`
 	Staging     string `yaml:"staging" json:"staging"`
 	Production  string `yaml:"production" json:"production"`
@@ -52,11 +52,11 @@ type PipelineBody struct {
 // Structure defines the overall structure of the json or yaml
 // configuration file
 type Structure struct {
-	BaseURL           Environments           `yaml:"baseUrl" json:"baseUrl"`
-	Credentials       Credentials            `yaml:"credentials" json:"credentials"`
-	LoginDetails      LoginDetails           `yaml:"loginDetails" json:"loginDetails"`
-	PipelineBody      []PipelineBody         `yaml:"current_pipeline" json:"current_pipeline"`
-	CustomPipelines   map[string]interface{} `yaml:"custom_pipelines" json:"custom_pipelines"`
+	BaseURL           Environment    `yaml:"baseUrl" json:"baseUrl"`
+	Credentials       Credentials     `yaml:"credentials" json:"credentials"`
+	LoginDetails      LoginDetails    `yaml:"loginDetails" json:"loginDetails"`
+	CurrentPipeline   CurrentPipeline `yaml:"current_pipeline" json:"current_pipeline"`
+	CustomPipelines   CustomPipeline  `yaml:"custom_pipelines" json:"custom_pipelines"`
 	ActiveURL         string
 	ActiveEnvironment string
 }
@@ -76,6 +76,49 @@ type FileReaderContext struct {
 	strategy FileReaderStrategy
 }
 
+// Constructors that support Factory Pattern in Golang for each of the Struct
+// above. The benefit to this is, we don't have to worry about defaults and checking
+// them in each of the function
+
+// NewEnvironment is a constructor for Environment
+func NewEnvironment(env *Environment) *Environment {
+	return env
+}
+
+// NewLoginDetails is a constructor for LoginDetails
+func NewLoginDetails(loginDetails *LoginDetails) *LoginDetails {
+	if loginDetails.Route == "" {
+		loginDetails.Route = "/login"
+	}
+	if loginDetails.TokenLocation == "" {
+		loginDetails.TokenLocation = "data.access_token"
+	}
+
+	return loginDetails
+}
+
+// NewPipelineBody is a constructor for PipelineBody
+func NewPipelineBody(pipelineBody *PipelineBody) *PipelineBody{
+	if pipelineBody.Method == "" {
+		pipelineBody.Method = "GET"
+	}
+
+	if pipelineBody.Endpoint == "" {
+		pipelineBody.Endpoint = "/"
+	}
+
+	if pipelineBody.ExpectedStatusCode == 0 {
+
+		if pipelineBody.Method == "POST" {
+			pipelineBody.ExpectedStatusCode = 201
+		} else {
+			pipelineBody.ExpectedStatusCode = 200
+		}
+	}
+
+	return pipelineBody
+}
+
 // SetStrategy allows you to change the strategy at runtime
 func (c *FileReaderContext) SetStrategy(strategy FileReaderStrategy) {
 	c.strategy = strategy
@@ -89,7 +132,7 @@ func (c *FileReaderContext) ReadInstructions(filepath string) (*Structure, error
 
 	structure, err := c.strategy.ReadInstructions(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("Could not call strategy")
+		return nil, err
 	}
 
 	return structure, nil

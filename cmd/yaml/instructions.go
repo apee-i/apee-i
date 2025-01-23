@@ -31,7 +31,7 @@ func (r *Reader) ReadInstructions(filepath string) (*cmd.Structure, error) {
 	fileContents := new(cmd.Structure)
 	err = y.Unmarshal(fileRawContents, &fileContents)
 	if err != nil {
-		return &cmd.Structure{}, fmt.Errorf("Could not map elements in yaml")
+		return &cmd.Structure{}, err
 	}
 
 	return fileContents, nil
