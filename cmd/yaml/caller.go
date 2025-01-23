@@ -15,7 +15,7 @@ import (
 )
 
 // Hit acts as an HTTP client and hits a rest based request
-func Hit(fileContents *cmd.Structure, structure cmd.APIStructure) (cmd.APIResponse, error) {
+func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIResponse, error) {
 
 	startTime := time.Now()
 	if structure.Method == "" {
@@ -109,7 +109,7 @@ func (r *Reader) Login(fileContents *cmd.Structure) {
 	// getting data from /me api
 	fmt.Println(utils.Blue + "- Token found..." + utils.Reset)
 	fmt.Println(utils.Blue + "- Testing for valid token..." + utils.Reset)
-	tokenCheckResponse, err := Hit(fileContents, cmd.APIStructure{
+	tokenCheckResponse, err := Hit(fileContents, cmd.PipelineBody{
 		Endpoint: "/me",
 	})
 	if err != nil {
@@ -146,7 +146,7 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 	fmt.Println(utils.Green + "- Generating and storing new token..." + utils.Reset)
 
 	// hitting login api with credentials
-	tokenGetResponse, err := Hit(fileContents, cmd.APIStructure{
+	tokenGetResponse, err := Hit(fileContents, cmd.PipelineBody{
 		Endpoint: "/login",
 		Method:   "POST",
 		Body:     credentials,
@@ -169,7 +169,7 @@ func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
 	for i := range fileContents.PipelineBody {
-		res, err := Hit(fileContents, cmd.APIStructure{
+		res, err := Hit(fileContents, cmd.PipelineBody{
 			Endpoint:           fileContents.PipelineBody[i].Endpoint,
 			Method:             fileContents.PipelineBody[i].Method,
 			Body:               fileContents.PipelineBody[i].Body,
@@ -200,7 +200,7 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 				req["expectedStatusCode"] = 200
 			}
 
-			res, err := Hit(fileContents, cmd.APIStructure{
+			res, err := Hit(fileContents, cmd.PipelineBody{
 				Endpoint:           req["endpoint"].(string),
 				Method:             req["method"].(string),
 				Body:               req["body"],
@@ -231,7 +231,7 @@ func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineK
 			req["expectedStatusCode"] = 200
 		}
 
-		res, err := Hit(fileContents, cmd.APIStructure{
+		res, err := Hit(fileContents, cmd.PipelineBody{
 			Endpoint:           req["endpoint"].(string),
 			Method:             req["method"].(string),
 			Body:               req["body"],

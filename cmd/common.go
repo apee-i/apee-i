@@ -6,16 +6,6 @@ import (
 	"github.com/Jeffail/gabs/v2"
 )
 
-// APIStructure defines all the elements that a pipeline body can contain
-type APIStructure struct {
-	Method             string
-	Endpoint           string
-	Body               any
-	ExpectedStatusCode int
-	ExpectedBody       any
-	Headers            any
-}
-
 // APIResponse defines all the elements that a request response will contain
 type APIResponse struct {
 	StatusCode int
