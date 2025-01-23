@@ -38,12 +38,11 @@ func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIRespon
 	}
 
 	// adding appropriate headers
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "bearer"+fileContents.LoginDetails.Token)
 
 	// adding custom headers from the user
 	if structure.Headers != nil {
-		for key, value := range structure.Headers.(map[string]interface{}) {
+		for key, value := range structure.Headers {
 			req.Header.Set(key, value.(string))
 		}
 	}
@@ -107,9 +106,9 @@ func (r *Reader) Login(fileContents *cmd.Structure) {
 	// getting data from /me api
 	fmt.Println(utils.Blue + "- Token found..." + utils.Reset)
 	fmt.Println(utils.Blue + "- Testing for valid token..." + utils.Reset)
-	tokenCheckResponse, err := Hit(fileContents, cmd.PipelineBody{
+	tokenCheckResponse, err := Hit(fileContents, *cmd.NewPipelineBody(&cmd.PipelineBody{
 		Endpoint: "/me",
-	})
+	}))
 	if err != nil {
 		fmt.Println(err.Error())
 		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
@@ -142,8 +141,8 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 	}
 
 	fmt.Println(utils.Green + "- Generating and storing new token..." + utils.Reset)
-	// hitting login api with credentials
 
+	// hitting login api with credentials
 	loginDetails := cmd.NewLoginDetails(&fileContents.LoginDetails)
 	pipelineBody := cmd.NewPipelineBody(&cmd.PipelineBody{
 		Endpoint: loginDetails.Route,
@@ -167,14 +166,16 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 // CallCurrentPipeline calls the current pipeline APIs endpoints in a sequence
 func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 
+	mergedHeaders := utils.Merge2Maps(fileContents.CurrentPipeline.Globals.Headers, fileContents.CurrentPipeline.Pipeline[0].Headers)
+
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
-	for i := range fileContents.PipelineBody {
+	for i := range fileContents.CurrentPipeline.Pipeline {
 		res, err := Hit(fileContents, cmd.PipelineBody{
-			Endpoint:           fileContents.PipelineBody[i].Endpoint,
-			Method:             fileContents.PipelineBody[i].Method,
-			Body:               fileContents.PipelineBody[i].Body,
-			ExpectedStatusCode: fileContents.PipelineBody[i].ExpectedStatusCode,
-			Headers:            fileContents.PipelineBody[i].Headers,
+			Endpoint:           fileContents.CurrentPipeline.Pipeline[i].Endpoint,
+			Method:             fileContents.CurrentPipeline.Pipeline[i].Method,
+			Body:               fileContents.CurrentPipeline.Pipeline[i].Body,
+			ExpectedStatusCode: fileContents.CurrentPipeline.Pipeline[i].ExpectedStatusCode,
+			Headers:            mergedHeaders,
 		})
 		if err != nil {
 			fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
@@ -208,12 +209,14 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 				data["expectedStatusCode"] = gabs.Wrap(expectedStatusCode)
 			}
 
+			mergedHeaders := utils.Merge2Maps(fileContents.CustomPipelines.Globals.Headers, data["headers"].Data().(map[string]any))
+
 			res, err := Hit(fileContents, cmd.PipelineBody{
 				Endpoint:           data["endpoint"].Data().(string),
 				Method:             data["method"].Data().(string),
 				Body:               data["body"].Data(),
 				ExpectedStatusCode: int(data["expectedStatusCode"].Data().(float64)),
-				Headers:            data["headers"].Data(),
+				Headers:            mergedHeaders,
 			})
 			if err != nil {
 				fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
@@ -248,12 +251,14 @@ func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineK
 			data["expectedStatusCode"] = gabs.Wrap(expectedStatusCode)
 		}
 
+		mergedHeaders := utils.Merge2Maps(fileContents.CustomPipelines.Globals.Headers, data["headers"].Data().(map[string]any))
+
 		res, err := Hit(fileContents, cmd.PipelineBody{
 			Endpoint:           data["endpoint"].Data().(string),
 			Method:             data["method"].Data().(string),
 			Body:               data["body"].Data(),
 			ExpectedStatusCode: int(data["expectedStatusCode"].Data().(float64)),
-			Headers:            data["headers"].Data(),
+			Headers:            mergedHeaders,
 		})
 		if err != nil {
 			fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)

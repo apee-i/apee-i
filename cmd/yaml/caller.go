@@ -38,12 +38,11 @@ func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIRespon
 	}
 
 	// adding appropriate headers
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "bearer"+fileContents.LoginDetails.Token)
 
 	// adding custom headers from the user
 	if structure.Headers != nil {
-		for key, value := range structure.Headers.(map[string]interface{}) {
+		for key, value := range structure.Headers {
 			req.Header.Set(key, value.(string))
 		}
 	}
@@ -168,13 +167,13 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
-	for i := range fileContents.PipelineBody {
+	for i := range fileContents.CurrentPipeline.Pipeline {
 		res, err := Hit(fileContents, cmd.PipelineBody{
-			Endpoint:           fileContents.PipelineBody[i].Endpoint,
-			Method:             fileContents.PipelineBody[i].Method,
-			Body:               fileContents.PipelineBody[i].Body,
-			ExpectedStatusCode: fileContents.PipelineBody[i].ExpectedStatusCode,
-			Headers:            fileContents.PipelineBody[i].Headers,
+			Endpoint:           fileContents.CurrentPipeline.Pipeline[i].Endpoint,
+			Method:             fileContents.CurrentPipeline.Pipeline[i].Method,
+			Body:               fileContents.CurrentPipeline.Pipeline[i].Body,
+			ExpectedStatusCode: fileContents.CurrentPipeline.Pipeline[i].ExpectedStatusCode,
+			Headers:            fileContents.CurrentPipeline.Pipeline[i].Headers,
 		})
 		if err != nil {
 			fmt.Println(utils.Red + err.Error() + utils.Reset)
@@ -188,7 +187,7 @@ func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 // CallCustomPipelines calls all the custom pipelines APIs endpoints
 func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 
-	for _, value := range fileContents.CustomPipelines {
+	for _, value := range fileContents.CustomPipelines.Pipeline {
 		structure := value.([]any)
 		for i := range structure {
 
@@ -205,7 +204,7 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 				Method:             req["method"].(string),
 				Body:               req["body"],
 				ExpectedStatusCode: req["expectedStatusCode"].(int),
-				Headers:            req["headers"],
+				Headers:            req["headers"].(map[string]any),
 			})
 			if err != nil {
 				fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
@@ -219,7 +218,7 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 
 // CallSingleCustomPipeline calls a single custom pipeline in a sequence
 func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineKey string) {
-	data := fileContents.CustomPipelines[pipelineKey].([]any)
+	data := fileContents.CustomPipelines.Pipeline[pipelineKey].([]any)
 
 	for i := range data {
 		req := data[i].(map[string]any)
@@ -236,7 +235,7 @@ func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineK
 			Method:             req["method"].(string),
 			Body:               req["body"],
 			ExpectedStatusCode: req["expectedStatusCode"].(int),
-			Headers:            req["headers"],
+			Headers:            req["headers"].(map[string]any),
 		})
 		if err != nil {
 			fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
