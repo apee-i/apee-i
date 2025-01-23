@@ -15,9 +15,9 @@ type APIResponse struct {
 // Credentials contains all the login properties
 // with respect to the 3 different environments
 type Credentials struct {
-	Development any `yaml:"development" json:"development"`
-	Staging     any `yaml:"staging" json:"staging"`
-	Production  any `yaml:"production" json:"production"`
+	Development PipelineBody `yaml:"development" json:"development"`
+	Staging     PipelineBody `yaml:"staging" json:"staging"`
+	Production  PipelineBody `yaml:"production" json:"production"`
 }
 
 // Environment are all the different envs that user
@@ -70,7 +70,7 @@ type CustomPipeline struct {
 // Structure defines the overall structure of the json or yaml
 // configuration file
 type Structure struct {
-	BaseURL           Environment    `yaml:"baseUrl" json:"baseUrl"`
+	BaseURL           Environment     `yaml:"baseUrl" json:"baseUrl"`
 	Credentials       Credentials     `yaml:"credentials" json:"credentials"`
 	LoginDetails      LoginDetails    `yaml:"loginDetails" json:"loginDetails"`
 	CurrentPipeline   CurrentPipeline `yaml:"current_pipeline" json:"current_pipeline"`
@@ -116,7 +116,7 @@ func NewLoginDetails(loginDetails *LoginDetails) *LoginDetails {
 }
 
 // NewPipelineBody is a constructor for PipelineBody
-func NewPipelineBody(pipelineBody *PipelineBody) *PipelineBody{
+func NewPipelineBody(pipelineBody *PipelineBody) *PipelineBody {
 	if pipelineBody.Method == "" {
 		pipelineBody.Method = "GET"
 	}

@@ -37,15 +37,14 @@ func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIRespon
 		return cmd.APIResponse{}, err
 	}
 
-	// adding appropriate headers
-	req.Header.Set("Authorization", "bearer"+fileContents.LoginDetails.Token)
-
 	// adding custom headers from the user
 	if structure.Headers != nil {
 		for key, value := range structure.Headers {
 			req.Header.Set(key, value.(string))
 		}
 	}
+	// adding appropriate headers
+	req.Header.Set("Authorization", "bearer"+fileContents.LoginDetails.Token)
 
 	// hitting the server with the request
 	res, err := http.DefaultClient.Do(req)
@@ -145,9 +144,11 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 	// hitting login api with credentials
 	loginDetails := cmd.NewLoginDetails(&fileContents.LoginDetails)
 	pipelineBody := cmd.NewPipelineBody(&cmd.PipelineBody{
-		Endpoint: loginDetails.Route,
-		Method:   "POST",
-		Body:     credentials,
+		Endpoint:           loginDetails.Route,
+		Method:             "POST",
+		Body:               credentials.Body,
+		Headers:            credentials.Headers,
+		ExpectedStatusCode: credentials.ExpectedStatusCode,
 	})
 	tokenGetResponse, err := Hit(fileContents, *pipelineBody)
 	if err != nil {
@@ -201,14 +202,6 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 		for i := range value.Children() {
 			data := value.Children()[i].ChildrenMap()
 
-			if data["method"].Data() == nil {
-				data["method"] = gabs.Wrap("GET")
-			}
-			if data["expectedStatusCode"].Data() == nil {
-				var expectedStatusCode float64
-				data["expectedStatusCode"] = gabs.Wrap(expectedStatusCode)
-			}
-
 			mergedHeaders := utils.Merge2Maps(fileContents.CustomPipelines.Globals.Headers, data["headers"].Data().(map[string]any))
 
 			res, err := Hit(fileContents, cmd.PipelineBody{
@@ -242,14 +235,6 @@ func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineK
 
 	for i := range children[pipelineKey].Children() {
 		data := children[pipelineKey].Children()[i].ChildrenMap()
-
-		if data["method"].Data() == nil {
-			data["method"] = gabs.Wrap("GET")
-		}
-		if data["expectedStatusCode"].Data() == nil {
-			var expectedStatusCode float64
-			data["expectedStatusCode"] = gabs.Wrap(expectedStatusCode)
-		}
 
 		mergedHeaders := utils.Merge2Maps(fileContents.CustomPipelines.Globals.Headers, data["headers"].Data().(map[string]any))
 

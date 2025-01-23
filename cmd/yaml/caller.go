@@ -18,9 +18,6 @@ import (
 func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIResponse, error) {
 
 	startTime := time.Now()
-	if structure.Method == "" {
-		structure.Method = "GET"
-	}
 
 	// forming complete url with endpoint
 	url := fileContents.ActiveURL + structure.Endpoint
@@ -145,10 +142,13 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 	fmt.Println(utils.Green + "- Generating and storing new token..." + utils.Reset)
 
 	// hitting login api with credentials
+	loginDetails := cmd.NewLoginDetails(&fileContents.LoginDetails)
 	tokenGetResponse, err := Hit(fileContents, cmd.PipelineBody{
-		Endpoint: "/login",
-		Method:   "POST",
-		Body:     credentials,
+		Endpoint:           loginDetails.Route,
+		Method:             "POST",
+		Body:               credentials.Body,
+		Headers:            credentials.Headers,
+		ExpectedStatusCode: credentials.ExpectedStatusCode,
 	})
 	if err != nil {
 		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
@@ -192,12 +192,6 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 		for i := range structure {
 
 			req := structure[i].(map[string]any)
-			if req["method"] == nil {
-				req["method"] = "GET"
-			}
-			if req["expectedStatusCode"] == nil {
-				req["expectedStatusCode"] = 200
-			}
 
 			res, err := Hit(fileContents, cmd.PipelineBody{
 				Endpoint:           req["endpoint"].(string),
@@ -222,13 +216,6 @@ func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineK
 
 	for i := range data {
 		req := data[i].(map[string]any)
-
-		if req["method"] == nil {
-			req["method"] = "GET"
-		}
-		if req["expectedStatusCode"] == nil {
-			req["expectedStatusCode"] = 200
-		}
 
 		res, err := Hit(fileContents, cmd.PipelineBody{
 			Endpoint:           req["endpoint"].(string),
