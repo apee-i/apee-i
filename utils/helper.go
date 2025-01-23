@@ -11,7 +11,7 @@ import (
 )
 
 // ResponseLogger is used to print out the API response in a nice green or red colored table for easier read
-func ResponseLogger(structure cmd.APIStructure, res *http.Response, url string, elapsedTime time.Duration) {
+func ResponseLogger(structure cmd.PipelineBody , res *http.Response, url string, elapsedTime time.Duration) {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
