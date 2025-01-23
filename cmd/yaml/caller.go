@@ -20,7 +20,12 @@ func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIRespon
 	startTime := time.Now()
 
 	// forming complete url with endpoint
-	url := fileContents.ActiveURL + structure.Endpoint
+	url := ""
+	if structure.BaseURL != "" {
+		url = structure.BaseURL + structure.Endpoint
+	} else {
+		url = fileContents.ActiveURL + structure.Endpoint
+	}
 
 	// forming request body for login in json format
 	jsonCredentials, err := json.Marshal(structure.Body)
@@ -105,9 +110,11 @@ func (r *Reader) Login(fileContents *cmd.Structure) {
 	// getting data from /me api
 	fmt.Println(utils.Blue + "- Token found..." + utils.Reset)
 	fmt.Println(utils.Blue + "- Testing for valid token..." + utils.Reset)
-	tokenCheckResponse, err := Hit(fileContents, cmd.PipelineBody{
+
+	pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 		Endpoint: "/me",
 	})
+	tokenCheckResponse, err := Hit(fileContents, *pipeline)
 	if err != nil {
 		fmt.Println(err.Error())
 		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
@@ -143,13 +150,13 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 
 	// hitting login api with credentials
 	loginDetails := cmd.NewLoginDetails(&fileContents.LoginDetails)
-	tokenGetResponse, err := Hit(fileContents, cmd.PipelineBody{
+	tokenGetResponse, err := Hit(fileContents, *cmd.NewPipelineBody(&cmd.PipelineBody{
 		Endpoint:           loginDetails.Route,
 		Method:             "POST",
 		Body:               credentials.Body,
 		Headers:            credentials.Headers,
 		ExpectedStatusCode: credentials.ExpectedStatusCode,
-	})
+	}))
 	if err != nil {
 		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 		return
@@ -168,13 +175,15 @@ func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
 	for i := range fileContents.CurrentPipeline.Pipeline {
-		res, err := Hit(fileContents, cmd.PipelineBody{
+		pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 			Endpoint:           fileContents.CurrentPipeline.Pipeline[i].Endpoint,
 			Method:             fileContents.CurrentPipeline.Pipeline[i].Method,
 			Body:               fileContents.CurrentPipeline.Pipeline[i].Body,
 			ExpectedStatusCode: fileContents.CurrentPipeline.Pipeline[i].ExpectedStatusCode,
 			Headers:            fileContents.CurrentPipeline.Pipeline[i].Headers,
+			BaseURL:            fileContents.CurrentPipeline.Pipeline[i].BaseURL,
 		})
+		res, err := Hit(fileContents, *pipeline)
 		if err != nil {
 			fmt.Println(utils.Red + err.Error() + utils.Reset)
 			return
@@ -193,13 +202,15 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 
 			req := structure[i].(map[string]any)
 
-			res, err := Hit(fileContents, cmd.PipelineBody{
+			pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 				Endpoint:           req["endpoint"].(string),
 				Method:             req["method"].(string),
 				Body:               req["body"],
 				ExpectedStatusCode: req["expectedStatusCode"].(int),
 				Headers:            req["headers"].(map[string]any),
+				BaseURL:            req["baseUrl"].(string),
 			})
+			res, err := Hit(fileContents, *pipeline)
 			if err != nil {
 				fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 				return
@@ -217,13 +228,15 @@ func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineK
 	for i := range data {
 		req := data[i].(map[string]any)
 
-		res, err := Hit(fileContents, cmd.PipelineBody{
+		pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 			Endpoint:           req["endpoint"].(string),
 			Method:             req["method"].(string),
 			Body:               req["body"],
 			ExpectedStatusCode: req["expectedStatusCode"].(int),
 			Headers:            req["headers"].(map[string]any),
+			BaseURL:            req["baseUrl"].(string),
 		})
+		res, err := Hit(fileContents, *pipeline)
 		if err != nil {
 			fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 			return

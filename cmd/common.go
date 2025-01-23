@@ -47,6 +47,7 @@ type PipelineBody struct {
 	Headers            map[string]any `yaml:"headers" json:"headers"`
 	ExpectedStatusCode int            `yaml:"expectedStatusCode" json:"expectedStatusCode"`
 	ExpectedBody       any            `yaml:"expectedBody" json:"expectedBody"`
+	BaseURL            string         `yaml:"baseUrl" json:"baseUrl"`
 }
 
 // PipelineGlobals contains properties that are used by both the
@@ -119,10 +120,6 @@ func NewLoginDetails(loginDetails *LoginDetails) *LoginDetails {
 func NewPipelineBody(pipelineBody *PipelineBody) *PipelineBody {
 	if pipelineBody.Method == "" {
 		pipelineBody.Method = "GET"
-	}
-
-	if pipelineBody.Endpoint == "" {
-		pipelineBody.Endpoint = "/"
 	}
 
 	if pipelineBody.ExpectedStatusCode == 0 {

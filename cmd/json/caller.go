@@ -18,12 +18,14 @@ import (
 func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIResponse, error) {
 
 	startTime := time.Now()
-	if structure.Method == "" {
-		structure.Method = "GET"
-	}
 
 	// forming complete url with endpoint
-	url := fileContents.ActiveURL + structure.Endpoint
+	url := ""
+	if structure.BaseURL != "" {
+		url = structure.BaseURL + structure.Endpoint
+	} else {
+		url = fileContents.ActiveURL + structure.Endpoint
+	}
 
 	// forming request body for login in json format
 	jsonCredentials, err := json.Marshal(structure.Body)
