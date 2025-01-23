@@ -31,7 +31,7 @@ Have `Go` installed in your system
 
 Step 1. Clone
 ```
-git clone https://github.com/IbraheemHaseeb7/apee-i.git
+git clone https://github.com/apee-i/apee-i.git
 cd apee-i
 ```
 
@@ -51,7 +51,7 @@ apee-i --file=myfile.json
 ```
 
 ### Follow the given json file structure
-`api.json` put this file wherever you want to test your APIs. A sample file is present [here](https://github.com/IbraheemHaseeb7/apee-i/blob/main/example/api.json) for you to use.
+`api.json` put this file wherever you want to test your APIs. A sample file is present [here](https://github.com/apee-i/apee-i/blob/main/example/api.json) for you to use.
 
 
 ```json
