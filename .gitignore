@@ -4,4 +4,4 @@ tmp/*
 api.json
 api.yaml
 utils/minor.go
-
+.idea

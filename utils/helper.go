@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/IbraheemHaseeb7/apee-i/cmd"
+	"github.com/apee-i/apee-i/cmd"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
