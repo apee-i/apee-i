@@ -41,22 +41,40 @@ type LoginDetails struct {
 // PipelineBody are all the elements that are sent by the
 // user from the configuration file
 type PipelineBody struct {
-	Method             string `yaml:"method" json:"method"`
-	Endpoint           string `yaml:"endpoint" json:"endpoint"`
-	Body               any    `yaml:"body" json:"body"`
-	Headers            any    `yaml:"headers" json:"headers"`
-	ExpectedStatusCode int    `yaml:"expectedStatusCode" json:"expectedStatusCode"`
-	ExpectedBody       any    `yaml:"expectedBody" json:"expectedBody"`
+	Method             string         `yaml:"method" json:"method"`
+	Endpoint           string         `yaml:"endpoint" json:"endpoint"`
+	Body               any            `yaml:"body" json:"body"`
+	Headers            map[string]any `yaml:"headers" json:"headers"`
+	ExpectedStatusCode int            `yaml:"expectedStatusCode" json:"expectedStatusCode"`
+	ExpectedBody       any            `yaml:"expectedBody" json:"expectedBody"`
+}
+
+// PipelineGlobals contains properties that are used by both the
+// current and custom pipelines
+type PipelineGlobals struct {
+	Headers map[string]any `yaml:"headers" json:"headers"`
+}
+
+// CurrentPipeline has the current pipeline specific properties
+type CurrentPipeline struct {
+	Globals  PipelineGlobals `yaml:"globals" json:"globals"`
+	Pipeline []PipelineBody  `yaml:"pipeline" json:"pipeline"`
+}
+
+// CustomPipeline has the custom pipeline specific properties
+type CustomPipeline struct {
+	Globals  PipelineGlobals        `yaml:"globals" json:"globals"`
+	Pipeline map[string]interface{} `yaml:"pipeline" json:"pipeline"`
 }
 
 // Structure defines the overall structure of the json or yaml
 // configuration file
 type Structure struct {
-	BaseURL           Environments           `yaml:"baseUrl" json:"baseUrl"`
-	Credentials       Credentials            `yaml:"credentials" json:"credentials"`
-	LoginDetails      LoginDetails           `yaml:"loginDetails" json:"loginDetails"`
-	PipelineBody      []PipelineBody         `yaml:"current_pipeline" json:"current_pipeline"`
-	CustomPipelines   map[string]interface{} `yaml:"custom_pipelines" json:"custom_pipelines"`
+	BaseURL           Environments    `yaml:"baseUrl" json:"baseUrl"`
+	Credentials       Credentials     `yaml:"credentials" json:"credentials"`
+	LoginDetails      LoginDetails    `yaml:"loginDetails" json:"loginDetails"`
+	CurrentPipeline   CurrentPipeline `yaml:"current_pipeline" json:"current_pipeline"`
+	CustomPipelines   CustomPipeline  `yaml:"custom_pipelines" json:"custom_pipelines"`
 	ActiveURL         string
 	ActiveEnvironment string
 }

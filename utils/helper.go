@@ -11,7 +11,7 @@ import (
 )
 
 // ResponseLogger is used to print out the API response in a nice green or red colored table for easier read
-func ResponseLogger(structure cmd.PipelineBody , res *http.Response, url string, elapsedTime time.Duration) {
+func ResponseLogger(structure cmd.PipelineBody, res *http.Response, url string, elapsedTime time.Duration) {
 
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
@@ -45,6 +45,21 @@ func ResponseLogger(structure cmd.PipelineBody , res *http.Response, url string,
 	t.AppendRow(table.Row{structure.Method, url, strconv.Itoa(res.StatusCode), expectedStatusCode, elapsedTime.Abs().String()})
 	t.Render()
 
+}
+
+// Merge2Maps is a generic function that can merge any type of maps
+func Merge2Maps[K comparable, V any](first, second map[K]V) map[K]V {
+	merged := make(map[K]V)
+
+	for key, value := range first {
+		merged[key] = value
+	}
+
+	for key, value := range second {
+		merged[key] = value
+	}
+
+	return merged
 }
 
 // func ValidateExpectedBody() {
