@@ -48,6 +48,8 @@ type PipelineBody struct {
 	ExpectedStatusCode int            `yaml:"expectedStatusCode" json:"expectedStatusCode"`
 	ExpectedBody       any            `yaml:"expectedBody" json:"expectedBody"`
 	BaseURL            string         `yaml:"baseUrl" json:"baseUrl"`
+	Protocol           string         `yaml:"protocol" json:"protocol"`
+	Timeout            int            `yaml:"timeout" json:"timeout"`
 }
 
 // PipelineGlobals contains properties that are used by both the
@@ -120,6 +122,14 @@ func NewLoginDetails(loginDetails *LoginDetails) *LoginDetails {
 func NewPipelineBody(pipelineBody *PipelineBody) *PipelineBody {
 	if pipelineBody.Method == "" {
 		pipelineBody.Method = "GET"
+	}
+
+	if pipelineBody.Protocol == "" {
+		pipelineBody.Protocol = "HTTP"
+	}
+
+	if pipelineBody.Timeout == 0 {
+		pipelineBody.Timeout = 10
 	}
 
 	if pipelineBody.ExpectedStatusCode == 0 {

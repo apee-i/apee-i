@@ -9,12 +9,12 @@ import (
 	"github.com/IbraheemHaseeb7/apee-i/cmd"
 )
 
-// Reader purpose is just to allow the programmer to make selection for JSON
-type Reader struct{}
+// Strategy purpose is just to allow the programmer to make selection for JSON
+type Strategy struct{}
 
 // ReadInstructions decodes and stores all the instructions from the configuration
 // file in the state of the program
-func (r *Reader) ReadInstructions(filepath string) (*cmd.Structure, error) {
+func (r *Strategy) ReadInstructions(filepath string) (*cmd.Structure, error) {
 
 	file, err := os.Open(filepath)
 	if err != nil {
