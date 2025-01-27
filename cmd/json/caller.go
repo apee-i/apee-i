@@ -1,88 +1,20 @@
 package json
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/IbraheemHaseeb7/apee-i/cmd"
+	"github.com/IbraheemHaseeb7/apee-i/cmd/protocols"
+	myHttp "github.com/IbraheemHaseeb7/apee-i/cmd/protocols/http"
+	"github.com/IbraheemHaseeb7/apee-i/cmd/protocols/ws"
 	"github.com/IbraheemHaseeb7/apee-i/utils"
 	"github.com/Jeffail/gabs/v2"
 )
 
-// Hit acts as an HTTP client and hits a rest based request
-func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIResponse, error) {
-
-	startTime := time.Now()
-
-	// forming complete url with endpoint
-	url := ""
-	if structure.BaseURL != "" {
-		url = structure.BaseURL + structure.Endpoint
-	} else {
-		url = fileContents.ActiveURL + structure.Endpoint
-	}
-
-	// forming request body for login in json format
-	jsonCredentials, err := json.Marshal(structure.Body)
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	// forming HTTP request
-	req, err := http.NewRequest(structure.Method, url, bytes.NewBuffer(jsonCredentials))
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	// adding custom headers from the user
-	if structure.Headers != nil {
-		for key, value := range structure.Headers {
-			req.Header.Set(key, value.(string))
-		}
-	}
-	// adding appropriate headers
-	req.Header.Set("Authorization", "bearer"+fileContents.LoginDetails.Token)
-
-	// hitting the server with the request
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	// closing body when function is popped from stack
-	defer res.Body.Close()
-
-	// reading the body
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	// parsing body into nice json
-	data, err := gabs.ParseJSON(body)
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	elapsedTime := time.Since(startTime)
-
-	// logging result - function stored in `helper.go`
-	utils.ResponseLogger(structure, res, url, elapsedTime)
-
-	// returning response
-	return cmd.APIResponse{
-		StatusCode: res.StatusCode,
-		Body:       data,
-	}, nil
-}
-
 // Login function logs the user in based on the credentials
-func (r *Reader) Login(fileContents *cmd.Structure) {
+func (r *Strategy) Login(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Green + "- Looking for token..." + utils.Reset)
 	// checking if token exists in the file
@@ -107,7 +39,11 @@ func (r *Reader) Login(fileContents *cmd.Structure) {
 	// getting data from /me api
 	fmt.Println(utils.Blue + "- Token found..." + utils.Reset)
 	fmt.Println(utils.Blue + "- Testing for valid token..." + utils.Reset)
-	tokenCheckResponse, err := Hit(fileContents, *cmd.NewPipelineBody(&cmd.PipelineBody{
+
+	protocolContext := &protocols.ProtocolContext{}
+	protocolContext.SetStrategy(&myHttp.Strategy{})
+
+	tokenCheckResponse, err := protocolContext.Hit(fileContents, *cmd.NewPipelineBody(&cmd.PipelineBody{
 		Endpoint: "/me",
 	}))
 	if err != nil {
@@ -152,7 +88,11 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 		Headers:            credentials.Headers,
 		ExpectedStatusCode: credentials.ExpectedStatusCode,
 	})
-	tokenGetResponse, err := Hit(fileContents, *pipelineBody)
+
+	protocolContext := &protocols.ProtocolContext{}
+	protocolContext.SetStrategy(&myHttp.Strategy{})
+
+	tokenGetResponse, err := protocolContext.Hit(fileContents, *pipelineBody)
 	if err != nil {
 		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 		return
@@ -167,21 +107,37 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 }
 
 // CallCurrentPipeline calls the current pipeline APIs endpoints in a sequence
-func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
+func (r *Strategy) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 	mergedHeaders := utils.Merge2Maps(fileContents.CurrentPipeline.Globals.Headers, fileContents.CurrentPipeline.Pipeline[0].Headers)
 
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
 	for i := range fileContents.CurrentPipeline.Pipeline {
-		res, err := Hit(fileContents, cmd.PipelineBody{
+
+		pipelineBody := *cmd.NewPipelineBody(&cmd.PipelineBody{
 			Endpoint:           fileContents.CurrentPipeline.Pipeline[i].Endpoint,
 			Method:             fileContents.CurrentPipeline.Pipeline[i].Method,
 			Body:               fileContents.CurrentPipeline.Pipeline[i].Body,
 			ExpectedStatusCode: fileContents.CurrentPipeline.Pipeline[i].ExpectedStatusCode,
+			BaseURL:            fileContents.CurrentPipeline.Pipeline[i].BaseURL,
 			Headers:            mergedHeaders,
+			Timeout:            fileContents.CurrentPipeline.Pipeline[i].Timeout,
+			Protocol:           fileContents.CurrentPipeline.Pipeline[i].Protocol,
 		})
+
+		protocolContext := &protocols.ProtocolContext{}
+		if pipelineBody.Protocol == "HTTP" {
+			protocolContext.SetStrategy(&myHttp.Strategy{})
+		} else if pipelineBody.Protocol == "WS" {
+			protocolContext.SetStrategy(&ws.Strategy{})
+		} else {
+			fmt.Println(utils.Red + "Not a valid protocol" + utils.Reset)
+			return
+		}
+
+		res, err := protocolContext.Hit(fileContents, pipelineBody)
 		if err != nil {
-			fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
+			fmt.Println(utils.Red + err.Error() + utils.Reset)
 			return
 		}
 
@@ -190,7 +146,7 @@ func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 }
 
 // CallCustomPipelines calls all the custom pipelines APIs endpoints
-func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
+func (r *Strategy) CallCustomPipelines(fileContents *cmd.Structure) {
 	bytesData, err := json.Marshal(fileContents.CustomPipelines)
 	jsonObj, err := gabs.ParseJSON(bytesData)
 	if err != nil {
@@ -205,14 +161,28 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 			data := value.Children()[i].ChildrenMap()
 
 			mergedHeaders := utils.Merge2Maps(fileContents.CustomPipelines.Globals.Headers, data["headers"].Data().(map[string]any))
-
-			res, err := Hit(fileContents, cmd.PipelineBody{
+			pipelineBody := *cmd.NewPipelineBody(&cmd.PipelineBody{
 				Endpoint:           data["endpoint"].Data().(string),
 				Method:             data["method"].Data().(string),
 				Body:               data["body"].Data(),
 				ExpectedStatusCode: int(data["expectedStatusCode"].Data().(float64)),
+				BaseURL:            data["baseUrl"].Data().(string),
 				Headers:            mergedHeaders,
+				Timeout:            data["timeout"].Data().(int),
+				Protocol:           data["protocol"].Data().(string),
 			})
+
+			protocolContext := &protocols.ProtocolContext{}
+			if pipelineBody.Protocol == "HTTP" {
+				protocolContext.SetStrategy(&myHttp.Strategy{})
+			} else if pipelineBody.Protocol == "WS" {
+				protocolContext.SetStrategy(&ws.Strategy{})
+			} else {
+				fmt.Println(utils.Red + "Not a valid protocol" + utils.Reset)
+				return
+			}
+
+			res, err := protocolContext.Hit(fileContents, pipelineBody)
 			if err != nil {
 				fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 				return
@@ -224,7 +194,7 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 }
 
 // CallSingleCustomPipeline calls a single custom pipeline in a sequence
-func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineKey string) {
+func (r *Strategy) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineKey string) {
 
 	bytesData, err := json.Marshal(fileContents.CustomPipelines)
 	jsonObj, err := gabs.ParseJSON(bytesData)
@@ -239,14 +209,28 @@ func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineK
 		data := children[pipelineKey].Children()[i].ChildrenMap()
 
 		mergedHeaders := utils.Merge2Maps(fileContents.CustomPipelines.Globals.Headers, data["headers"].Data().(map[string]any))
-
-		res, err := Hit(fileContents, cmd.PipelineBody{
+		pipelineBody := *cmd.NewPipelineBody(&cmd.PipelineBody{
 			Endpoint:           data["endpoint"].Data().(string),
 			Method:             data["method"].Data().(string),
 			Body:               data["body"].Data(),
 			ExpectedStatusCode: int(data["expectedStatusCode"].Data().(float64)),
+			BaseURL:            data["baseUrl"].Data().(string),
 			Headers:            mergedHeaders,
+			Timeout:            data["timeout"].Data().(int),
+			Protocol:           data["protocol"].Data().(string),
 		})
+
+		protocolContext := &protocols.ProtocolContext{}
+		if pipelineBody.Protocol == "HTTP" {
+			protocolContext.SetStrategy(&myHttp.Strategy{})
+		} else if pipelineBody.Protocol == "WS" {
+			protocolContext.SetStrategy(&ws.Strategy{})
+		} else {
+			fmt.Println(utils.Red + "Not a valid protocol" + utils.Reset)
+			return
+		}
+
+		res, err := protocolContext.Hit(fileContents, pipelineBody)
 		if err != nil {
 			fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 			return

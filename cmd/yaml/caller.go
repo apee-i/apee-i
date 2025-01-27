@@ -1,91 +1,20 @@
 package yaml
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/IbraheemHaseeb7/apee-i/cmd"
+	"github.com/IbraheemHaseeb7/apee-i/cmd/protocols"
+	myHttp "github.com/IbraheemHaseeb7/apee-i/cmd/protocols/http"
+	"github.com/IbraheemHaseeb7/apee-i/cmd/protocols/ws"
 	"github.com/IbraheemHaseeb7/apee-i/utils"
-	"github.com/Jeffail/gabs/v2"
 )
-
-// Hit acts as an HTTP client and hits a rest based request
-func Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) (cmd.APIResponse, error) {
-
-	startTime := time.Now()
-
-	// forming complete url with endpoint
-	url := ""
-	if structure.BaseURL != "" {
-		url = structure.BaseURL + structure.Endpoint
-	} else {
-		url = fileContents.ActiveURL + structure.Endpoint
-	}
-
-	// forming request body for login in json format
-	jsonCredentials, err := json.Marshal(structure.Body)
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	// forming HTTP request
-	req, err := http.NewRequest(structure.Method, url, bytes.NewBuffer(jsonCredentials))
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	// adding appropriate headers
-	req.Header.Set("Authorization", "bearer"+fileContents.LoginDetails.Token)
-
-	// adding custom headers from the user
-	if structure.Headers != nil {
-		for key, value := range structure.Headers {
-			req.Header.Set(key, value.(string))
-		}
-	}
-
-	// hitting the server with the request
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	// closing body when function is popped from stack
-	defer res.Body.Close()
-
-	// reading the body
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	// parsing body into nice json
-	data, err := gabs.ParseJSON(body)
-	if err != nil {
-		return cmd.APIResponse{}, err
-	}
-
-	elapsedTime := time.Since(startTime)
-
-	// logging result - function stored in `helper.go`
-	utils.ResponseLogger(structure, res, url, elapsedTime)
-
-	// returning response
-	return cmd.APIResponse{
-		StatusCode: res.StatusCode,
-		Body:       data,
-	}, nil
-}
 
 // Login is use to login user based on login credentials
 // provided with YAML file. Checks for the environment and
 // then uses credentials accordingly
-func (r *Reader) Login(fileContents *cmd.Structure) {
+func (r *Strategy) Login(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Green + "- Looking for token..." + utils.Reset)
 	// checking if token exists in the file
@@ -114,7 +43,11 @@ func (r *Reader) Login(fileContents *cmd.Structure) {
 	pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 		Endpoint: "/me",
 	})
-	tokenCheckResponse, err := Hit(fileContents, *pipeline)
+
+	protocolContext := &protocols.ProtocolContext{}
+	protocolContext.SetStrategy(&myHttp.Strategy{})
+
+	tokenCheckResponse, err := protocolContext.Hit(fileContents, *pipeline)
 	if err != nil {
 		fmt.Println(err.Error())
 		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
@@ -148,9 +81,12 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Green + "- Generating and storing new token..." + utils.Reset)
 
+	protocolContext := &protocols.ProtocolContext{}
+	protocolContext.SetStrategy(&myHttp.Strategy{})
+
 	// hitting login api with credentials
 	loginDetails := cmd.NewLoginDetails(&fileContents.LoginDetails)
-	tokenGetResponse, err := Hit(fileContents, *cmd.NewPipelineBody(&cmd.PipelineBody{
+	tokenGetResponse, err := protocolContext.Hit(fileContents, *cmd.NewPipelineBody(&cmd.PipelineBody{
 		Endpoint:           loginDetails.Route,
 		Method:             "POST",
 		Body:               credentials.Body,
@@ -171,10 +107,11 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 }
 
 // CallCurrentPipeline calls the current pipeline APIs endpoints in a sequence
-func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
+func (r *Strategy) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
 	for i := range fileContents.CurrentPipeline.Pipeline {
+
 		pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 			Endpoint:           fileContents.CurrentPipeline.Pipeline[i].Endpoint,
 			Method:             fileContents.CurrentPipeline.Pipeline[i].Method,
@@ -182,8 +119,21 @@ func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 			ExpectedStatusCode: fileContents.CurrentPipeline.Pipeline[i].ExpectedStatusCode,
 			Headers:            fileContents.CurrentPipeline.Pipeline[i].Headers,
 			BaseURL:            fileContents.CurrentPipeline.Pipeline[i].BaseURL,
+			Timeout:            fileContents.CurrentPipeline.Pipeline[i].Timeout,
+			Protocol:           fileContents.CurrentPipeline.Pipeline[i].Protocol,
 		})
-		res, err := Hit(fileContents, *pipeline)
+
+		protocolContext := &protocols.ProtocolContext{}
+		if pipeline.Protocol == "HTTP" {
+			protocolContext.SetStrategy(&myHttp.Strategy{})
+		} else if pipeline.Protocol == "WS" {
+			protocolContext.SetStrategy(&ws.Strategy{})
+		} else {
+			fmt.Println(utils.Red + "Not a valid protocol" + utils.Reset)
+			return
+		}
+
+		res, err := protocolContext.Hit(fileContents, *pipeline)
 		if err != nil {
 			fmt.Println(utils.Red + err.Error() + utils.Reset)
 			return
@@ -194,7 +144,7 @@ func (r *Reader) CallCurrentPipeline(fileContents *cmd.Structure) {
 }
 
 // CallCustomPipelines calls all the custom pipelines APIs endpoints
-func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
+func (r *Strategy) CallCustomPipelines(fileContents *cmd.Structure) {
 
 	for _, value := range fileContents.CustomPipelines.Pipeline {
 		structure := value.([]any)
@@ -209,8 +159,21 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 				ExpectedStatusCode: req["expectedStatusCode"].(int),
 				Headers:            req["headers"].(map[string]any),
 				BaseURL:            req["baseUrl"].(string),
+				Timeout:            req["timeout"].(int),
+				Protocol:           req["protocol"].(string),
 			})
-			res, err := Hit(fileContents, *pipeline)
+
+			protocolContext := &protocols.ProtocolContext{}
+			if pipeline.Protocol == "HTTP" {
+				protocolContext.SetStrategy(&myHttp.Strategy{})
+			} else if pipeline.Protocol == "WS" {
+				protocolContext.SetStrategy(&ws.Strategy{})
+			} else {
+				fmt.Println(utils.Red + "Not a valid protocol" + utils.Reset)
+				return
+			}
+
+			res, err := protocolContext.Hit(fileContents, *pipeline)
 			if err != nil {
 				fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 				return
@@ -222,7 +185,7 @@ func (r *Reader) CallCustomPipelines(fileContents *cmd.Structure) {
 }
 
 // CallSingleCustomPipeline calls a single custom pipeline in a sequence
-func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineKey string) {
+func (r *Strategy) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineKey string) {
 	data := fileContents.CustomPipelines.Pipeline[pipelineKey].([]any)
 
 	for i := range data {
@@ -235,8 +198,21 @@ func (r *Reader) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineK
 			ExpectedStatusCode: req["expectedStatusCode"].(int),
 			Headers:            req["headers"].(map[string]any),
 			BaseURL:            req["baseUrl"].(string),
+			Timeout:            req["timeout"].(int),
+			Protocol:           req["protocol"].(string),
 		})
-		res, err := Hit(fileContents, *pipeline)
+
+		protocolContext := &protocols.ProtocolContext{}
+		if pipeline.Protocol == "HTTP" {
+			protocolContext.SetStrategy(&myHttp.Strategy{})
+		} else if pipeline.Protocol == "WS" {
+			protocolContext.SetStrategy(&ws.Strategy{})
+		} else {
+			fmt.Println(utils.Red + "Not a valid protocol" + utils.Reset)
+			return
+		}
+
+		res, err := protocolContext.Hit(fileContents, *pipeline)
 		if err != nil {
 			fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
 			return

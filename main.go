@@ -72,9 +72,9 @@ func main() {
 
 	// choosing the file reader according to file type
 	if format == "yaml" {
-		fileContext.SetStrategy(&yaml.Reader{})
+		fileContext.SetStrategy(&yaml.Strategy{})
 	} else if format == "json" {
-		fileContext.SetStrategy(&json.Reader{})
+		fileContext.SetStrategy(&json.Strategy{})
 	} else {
 		fmt.Println("Invalid File format!!")
 		return
