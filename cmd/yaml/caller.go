@@ -111,13 +111,14 @@ func (r *Strategy) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
 	for i := range fileContents.CurrentPipeline.Pipeline {
+		mergedHeaders := utils.Merge2Maps(fileContents.CurrentPipeline.Globals.Headers, fileContents.CurrentPipeline.Pipeline[i].Headers)
 
 		pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 			Endpoint:           fileContents.CurrentPipeline.Pipeline[i].Endpoint,
 			Method:             fileContents.CurrentPipeline.Pipeline[i].Method,
 			Body:               fileContents.CurrentPipeline.Pipeline[i].Body,
 			ExpectedStatusCode: fileContents.CurrentPipeline.Pipeline[i].ExpectedStatusCode,
-			Headers:            fileContents.CurrentPipeline.Pipeline[i].Headers,
+			Headers:            mergedHeaders,
 			BaseURL:            fileContents.CurrentPipeline.Pipeline[i].BaseURL,
 			Timeout:            fileContents.CurrentPipeline.Pipeline[i].Timeout,
 			Protocol:           fileContents.CurrentPipeline.Pipeline[i].Protocol,
@@ -151,13 +152,14 @@ func (r *Strategy) CallCustomPipelines(fileContents *cmd.Structure) {
 		for i := range structure {
 
 			req := structure[i].(map[string]any)
+			mergedHeaders := utils.Merge2Maps(req["headers"].(map[string]any), fileContents.CustomPipelines.Globals.Headers)
 
 			pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 				Endpoint:           req["endpoint"].(string),
 				Method:             req["method"].(string),
 				Body:               req["body"],
 				ExpectedStatusCode: req["expectedStatusCode"].(int),
-				Headers:            req["headers"].(map[string]any),
+				Headers:            mergedHeaders,
 				BaseURL:            req["baseUrl"].(string),
 				Timeout:            req["timeout"].(int),
 				Protocol:           req["protocol"].(string),
@@ -190,13 +192,14 @@ func (r *Strategy) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelin
 
 	for i := range data {
 		req := data[i].(map[string]any)
+		mergedHeaders := utils.Merge2Maps(req["headers"].(map[string]any), fileContents.CustomPipelines.Globals.Headers)
 
 		pipeline := cmd.NewPipelineBody(&cmd.PipelineBody{
 			Endpoint:           req["endpoint"].(string),
 			Method:             req["method"].(string),
 			Body:               req["body"],
 			ExpectedStatusCode: req["expectedStatusCode"].(int),
-			Headers:            req["headers"].(map[string]any),
+			Headers:            mergedHeaders,
 			BaseURL:            req["baseUrl"].(string),
 			Timeout:            req["timeout"].(int),
 			Protocol:           req["protocol"].(string),
