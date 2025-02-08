@@ -16,19 +16,20 @@ import (
 // Login function logs the user in based on the credentials
 func (r *Strategy) Login(fileContents *cmd.Structure) {
 
-	fmt.Println(utils.Green + "- Looking for token..." + utils.Reset)
+	fmt.Print("\t ==> Performing Authentication <==\n\n")
+	fmt.Println(utils.White + "* Looking for token 👀" + utils.Reset)
 	// checking if token exists in the file
 	// if file doesnt exist, generate new token
 	data, err := os.ReadFile("token.txt")
 	if err != nil {
-		fmt.Println(utils.Red + "- Token file not found..." + utils.Reset)
+		fmt.Println(utils.White + "* Token file not found ❌" + utils.Reset)
 		GetAndStoreToken(fileContents)
 		return
 	}
 
 	// if file exists but is empty, generate new token
 	if string(data) == "" {
-		fmt.Println(utils.Red + "- Token not present in the document..." + utils.Reset)
+		fmt.Println(utils.White + "* Token not present in the document ❌" + utils.Reset)
 		GetAndStoreToken(fileContents)
 		return
 	}
@@ -36,30 +37,28 @@ func (r *Strategy) Login(fileContents *cmd.Structure) {
 	// store token in app state
 	fileContents.LoginDetails.Token = string(data)
 
-	// getting data from /me api
-	fmt.Println(utils.Blue + "- Token found..." + utils.Reset)
-	fmt.Println(utils.Blue + "- Testing for valid token..." + utils.Reset)
+	fmt.Println(utils.White + "* Token found ✅" + utils.Reset)
+	fmt.Print(utils.White + "* Testing for valid token 🔃" + utils.Reset + "\n\n")
 
 	protocolContext := &protocols.ProtocolContext{}
 	protocolContext.SetStrategy(&myHttp.Strategy{})
 
 	tokenCheckResponse, err := protocolContext.Hit(fileContents, *cmd.NewPipelineBody(&cmd.PipelineBody{
-		Endpoint: "/me",
+		Endpoint: fileContents.LoginDetails.TestingRoute,
 	}))
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
+		fmt.Print(utils.White + "\n* Could not hit API, try again ❌" + utils.Reset + "\n\n")
 		return
 	}
 
 	// if request fails with unauthorized, generate new token
-	if tokenCheckResponse.StatusCode == 401 {
-		fmt.Println(utils.Red + "- Invalid token found..." + utils.Reset)
+	if tokenCheckResponse.StatusCode != 200 && tokenCheckResponse.StatusCode != 201 {
+		fmt.Println(utils.White + "\n* Invalid token found ❌" + utils.Reset)
 		GetAndStoreToken(fileContents)
 		return
 	}
 
-	fmt.Println(utils.Green + "\nValid token found!!\n" + utils.Reset)
+	fmt.Println(utils.White + "\nValid token found ✅\n" + utils.Reset)
 }
 
 // GetAndStoreToken is a helper function that simply gets the token
@@ -77,7 +76,7 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 		credentials = fileContents.Credentials.Production
 	}
 
-	fmt.Println(utils.Green + "- Generating and storing new token..." + utils.Reset)
+	fmt.Print(utils.White + "* Generating and storing new token ⚙️" + utils.Reset + "\n\n")
 
 	// hitting login api with credentials
 	loginDetails := cmd.NewLoginDetails(&fileContents.LoginDetails)
@@ -94,7 +93,7 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 
 	tokenGetResponse, err := protocolContext.Hit(fileContents, *pipelineBody)
 	if err != nil {
-		fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
+		fmt.Println(utils.White + "* Could not hit API, try again ❌" + utils.Reset)
 		return
 	}
 
@@ -104,16 +103,17 @@ func GetAndStoreToken(fileContents *cmd.Structure) {
 	// storing token in the file and in app state
 	os.WriteFile("token.txt", []byte(token), 0633)
 	fileContents.LoginDetails.Token = token
+	fmt.Println()
 }
 
 // CallCurrentPipeline calls the current pipeline APIs endpoints in a sequence
 func (r *Strategy) CallCurrentPipeline(fileContents *cmd.Structure) {
 
-	mergedHeaders := utils.Merge2Maps(fileContents.CurrentPipeline.Globals.Headers, fileContents.CurrentPipeline.Pipeline[0].Headers)
+	fmt.Print("\t ==> Calling All APIs in \"Current\" Pipeline <==\n\n")
 
-	fmt.Println(utils.Blue + "\nCalling All API in current pipeline\n" + utils.Reset)
 	for i := range fileContents.CurrentPipeline.Pipeline {
 
+		mergedHeaders := utils.Merge2Maps(fileContents.CurrentPipeline.Globals.Headers, fileContents.CurrentPipeline.Pipeline[i].Headers)
 		pipelineBody := *cmd.NewPipelineBody(&cmd.PipelineBody{
 			Endpoint:           fileContents.CurrentPipeline.Pipeline[i].Endpoint,
 			Method:             fileContents.CurrentPipeline.Pipeline[i].Method,
@@ -131,13 +131,13 @@ func (r *Strategy) CallCurrentPipeline(fileContents *cmd.Structure) {
 		} else if pipelineBody.Protocol == "WS" {
 			protocolContext.SetStrategy(&ws.Strategy{})
 		} else {
-			fmt.Println(utils.Red + "Not a valid protocol" + utils.Reset)
+			fmt.Print(utils.White + "* Not a valid protocol ❌" + utils.Reset + "\n\n")
 			return
 		}
 
 		res, err := protocolContext.Hit(fileContents, pipelineBody)
 		if err != nil {
-			fmt.Println(utils.Red + err.Error() + utils.Reset)
+			fmt.Print(utils.White + "* Could not hit API, try again with different values ❌" + utils.Reset + "\n\n")
 			return
 		}
 
@@ -147,6 +147,8 @@ func (r *Strategy) CallCurrentPipeline(fileContents *cmd.Structure) {
 
 // CallCustomPipelines calls all the custom pipelines APIs endpoints
 func (r *Strategy) CallCustomPipelines(fileContents *cmd.Structure) {
+	fmt.Print("\t ==> Calling All APIs in \"Custom\" Pipelines <==\n\n")
+
 	bytesData, err := json.Marshal(fileContents.CustomPipelines)
 	jsonObj, err := gabs.ParseJSON(bytesData)
 	if err != nil {
@@ -184,7 +186,7 @@ func (r *Strategy) CallCustomPipelines(fileContents *cmd.Structure) {
 
 			res, err := protocolContext.Hit(fileContents, pipelineBody)
 			if err != nil {
-				fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
+				fmt.Print(utils.Red + "* Not a valid protocol ❌" + utils.Reset + "\n\n")
 				return
 			}
 
@@ -195,6 +197,12 @@ func (r *Strategy) CallCustomPipelines(fileContents *cmd.Structure) {
 
 // CallSingleCustomPipeline calls a single custom pipeline in a sequence
 func (r *Strategy) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelineKey string) {
+
+	if fileContents.CustomPipelines.Pipeline[pipelineKey] == nil {
+		fmt.Print(utils.White + "* Could not find this pipeline, try another name? ❌" + utils.Reset + "\n\n")
+		return
+	}
+	fmt.Print("\t ==> Calling \"" + pipelineKey + "\" APIs in \"Custom\" Pipelines <==\n\n")
 
 	bytesData, err := json.Marshal(fileContents.CustomPipelines)
 	jsonObj, err := gabs.ParseJSON(bytesData)
@@ -226,13 +234,13 @@ func (r *Strategy) CallSingleCustomPipeline(fileContents *cmd.Structure, pipelin
 		} else if pipelineBody.Protocol == "WS" {
 			protocolContext.SetStrategy(&ws.Strategy{})
 		} else {
-			fmt.Println(utils.Red + "Not a valid protocol" + utils.Reset)
+			fmt.Print(utils.White + "* Not a valid protocol ❌" + utils.Reset + "\n\n")
 			return
 		}
 
 		res, err := protocolContext.Hit(fileContents, pipelineBody)
 		if err != nil {
-			fmt.Println(utils.Red + "Could not hit API, try again..." + utils.Reset)
+			fmt.Print(utils.White + "* Could not hit API, try again with different values ❌" + utils.Reset + "\n\n")
 			return
 		}
 

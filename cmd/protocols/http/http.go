@@ -47,7 +47,7 @@ func (s *Strategy) Hit(fileContents *cmd.Structure, structure cmd.PipelineBody) 
 		}
 	}
 	// adding appropriate headers
-	req.Header.Set("Authorization", "bearer"+fileContents.LoginDetails.Token)
+	req.Header.Set("Authorization", "bearer "+fileContents.LoginDetails.Token)
 
 	// hitting the server with the request
 	res, err := http.DefaultClient.Do(req)

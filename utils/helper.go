@@ -44,7 +44,6 @@ func ResponseLogger(structure cmd.PipelineBody, res *http.Response, url string, 
 
 	t.AppendRow(table.Row{structure.Method, url, strconv.Itoa(res.StatusCode), expectedStatusCode, elapsedTime.Abs().String()})
 	t.Render()
-
 }
 
 // Merge2Maps is a generic function that can merge any type of maps

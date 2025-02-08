@@ -26,3 +26,18 @@ const Gray = "\033[37m"
 
 // White sets ASCII color to white on CLI
 const White = "\033[97m"
+
+// BlackOnWhite sets ASCII color to white on CLI
+const BlackOnWhite = "\033[30;47m"
+
+// GreenOnWhite sets ASCII color to green on CLI
+const GreenOnWhite = "\033[32;47m"
+
+// RedOnWhite sets ASCII color to red on CLI
+const RedOnWhite = "\033[31;47m"
+
+// BlueOnWhite sets ASCII color to blue on CLI
+const BlueOnWhite = "\033[34;47m"
+
+// YellowOnWhite sets ASCII color to yellow on CLI
+const YellowOnWhite = "\033[33;47m"

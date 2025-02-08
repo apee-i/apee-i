@@ -35,6 +35,7 @@ type Environment struct {
 type LoginDetails struct {
 	Route         string `yaml:"route" json:"route"`
 	TokenLocation string `yaml:"token_location" json:"token_location"`
+	TestingRoute  string `yaml:"testing_route" json:"testing_route"`
 	Token         string
 }
 
