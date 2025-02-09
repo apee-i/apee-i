@@ -74,6 +74,16 @@ func main() {
 
 	// inline mode
 	if *inlineMode {
+
+		if *inlineBaseURL == "" {
+			fmt.Println("Error: Base URL (--url) is required in inline mode.")
+			return
+		}
+		if *inlineEndpoint == "" {
+			fmt.Println("Error: Endpoint (--endpoint) is required in inline mode.")
+			return
+		}
+
 		headers := make(map[string]string)
 
 		if *inlineHeaders != "" {
