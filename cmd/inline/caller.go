@@ -8,6 +8,7 @@ import (
 	"github.com/IbraheemHaseeb7/apee-i/utils"
 )
 
+// Options contains the properties that define an inline request
 type Options struct {
 	Method             string
 	Body               string
@@ -20,6 +21,7 @@ type Options struct {
 	ExpectedStatusCode int
 }
 
+// RunInline function executes an inline request
 func RunInline(opts Options) {
 	pipeline := *cmd.NewPipelineBody(&cmd.PipelineBody{
 		Method:             opts.Method,
