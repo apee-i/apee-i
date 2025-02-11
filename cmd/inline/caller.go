@@ -27,6 +27,7 @@ func RunInline(opts Options) {
 
 	if err != nil {
 		fmt.Println(utils.Red + "Error parsing the URL: " + err.Error() + utils.Reset)
+		return
 	}
 
 	baseURL := parsedURL.Scheme + "://" + parsedURL.Host
@@ -70,6 +71,7 @@ func RunInline(opts Options) {
 
 	if err != nil {
 		fmt.Println(utils.Red + "Error executing inline call: " + err.Error() + utils.Reset)
+		return
 	}
 
 	fmt.Println("Response:")
