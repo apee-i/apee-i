@@ -62,9 +62,8 @@ func main() {
 	inlineMode := flag.Bool("inline", false, "Run in inline mode (ignores configuration file)")
 	inlineMethod := flag.String("method", "GET", "HTTP method for inline mode (e.g., GET, POST, PUT, DELETE)")
 	inlineBody := flag.String("body", "", "Request body as a JSON string for inline mode")
-	inlineEndpoint := flag.String("endpoint", "", "Endpoint for inline mode (e.g., v1/users)")
+	inlineURL := flag.String("url", "", "URL for inline mode (e.g., https://api.example.com/v1/users)")
 	inlineHeaders := flag.String("headers", "", "Custom header(s) in key:value format (comma-separated, e.g., 'Content-Type:application/json,Accept:application/json')")
-	inlineBaseURL := flag.String("url", "", "Base URL for inline mode (e.g., https://api.example.com)")
 	inlineProtocol := flag.String("protocol", "HTTP", "Protocol to use for inline mode (currently only HTTP is supported)")
 	inlineTimeout := flag.Int("timeout", 30, "Request timeout in seconds for inline mode")
 	inlineToken := flag.String("token", "", "Optional authentication token for inline mode")
@@ -75,12 +74,8 @@ func main() {
 	// inline mode
 	if *inlineMode {
 
-		if *inlineBaseURL == "" {
-			fmt.Println("Error: Base URL (--url) is required in inline mode.")
-			return
-		}
-		if *inlineEndpoint == "" {
-			fmt.Println("Error: Endpoint (--endpoint) is required in inline mode.")
+		if *inlineURL == "" {
+			fmt.Println("Error: URL (--url) is required in inline mode.")
 			return
 		}
 
@@ -104,9 +99,8 @@ func main() {
 		inlineOpts := inline.Options{
 			Method:             *inlineMethod,
 			Body:               *inlineBody,
-			Endpoint:           *inlineEndpoint,
+			URL:                *inlineURL,
 			Headers:            headers,
-			BaseURL:            *inlineBaseURL,
 			Protocol:           *inlineProtocol,
 			Timeout:            *inlineTimeout,
 			Token:              *inlineToken,
