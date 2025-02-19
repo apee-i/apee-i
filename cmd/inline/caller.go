@@ -6,15 +6,15 @@ import (
 	"github.com/IbraheemHaseeb7/apee-i/cmd/protocols"
 	myHttp "github.com/IbraheemHaseeb7/apee-i/cmd/protocols/http"
 	"github.com/IbraheemHaseeb7/apee-i/utils"
+	"net/url"
 )
 
 // Options contains the properties that define an inline request
 type Options struct {
 	Method             string
+	URL                string
 	Body               string
-	Endpoint           string
 	Headers            map[string]string
-	BaseURL            string
 	Protocol           string
 	Timeout            int
 	Token              string
@@ -23,12 +23,22 @@ type Options struct {
 
 // RunInline function executes an inline request
 func RunInline(opts Options) {
+	parsedURL, err := url.Parse(opts.URL)
+
+	if err != nil {
+		fmt.Println(utils.Red + "Error parsing the URL: " + err.Error() + utils.Reset)
+		return
+	}
+
+	baseURL := parsedURL.Scheme + "://" + parsedURL.Host
+	endpoint := parsedURL.Path
+
 	pipeline := *cmd.NewPipelineBody(&cmd.PipelineBody{
 		Method:             opts.Method,
 		Body:               opts.Body,
-		Endpoint:           opts.Endpoint,
+		Endpoint:           endpoint,
 		Headers:            convertHeaders(opts.Headers),
-		BaseURL:            opts.BaseURL,
+		BaseURL:            baseURL,
 		Protocol:           opts.Protocol,
 		Timeout:            opts.Timeout,
 		ExpectedStatusCode: opts.ExpectedStatusCode,
@@ -51,7 +61,7 @@ func RunInline(opts Options) {
 	}
 
 	dummyConfig := &cmd.Structure{
-		ActiveURL: opts.BaseURL,
+		ActiveURL: baseURL,
 		LoginDetails: cmd.LoginDetails{
 			Token: opts.Token,
 		},
@@ -61,6 +71,7 @@ func RunInline(opts Options) {
 
 	if err != nil {
 		fmt.Println(utils.Red + "Error executing inline call: " + err.Error() + utils.Reset)
+		return
 	}
 
 	fmt.Println("Response:")
