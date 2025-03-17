@@ -58,7 +58,7 @@ func RunInline(opts Options) {
 		if pipeline.Headers == nil {
 			pipeline.Headers = make(map[string]interface{})
 		}
-		pipeline.Headers["Authorization"] = "Bearer " + opts.Token
+		pipeline.Headers["Authorization"] = "bearer " + opts.Token
 	}
 
 	dummyConfig := &cmd.Structure{
