@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/IbraheemHaseeb7/apee-i/cmd/inline"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/IbraheemHaseeb7/apee-i/cmd/inline"
 
 	"github.com/IbraheemHaseeb7/apee-i/cmd"
 	"github.com/IbraheemHaseeb7/apee-i/cmd/json"
@@ -45,7 +46,7 @@ func main() {
 				return
 			}
 		} else {
-			fmt.Println("No such subcommand exists!!!\n\n\tTry " + utils.Green + "apee-i --help" + utils.Reset + " to see all commands\n")
+			fmt.Println("No such subcommand exists!!!\n\n\tTry " + utils.Green + "apee-i --help" + utils.Reset + " to see all commands")
 			return
 		}
 	}

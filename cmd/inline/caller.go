@@ -2,11 +2,12 @@ package inline
 
 import (
 	"fmt"
+	"net/url"
+
 	"github.com/IbraheemHaseeb7/apee-i/cmd"
 	"github.com/IbraheemHaseeb7/apee-i/cmd/protocols"
 	myHttp "github.com/IbraheemHaseeb7/apee-i/cmd/protocols/http"
 	"github.com/IbraheemHaseeb7/apee-i/utils"
-	"net/url"
 )
 
 // Options contains the properties that define an inline request
@@ -57,7 +58,7 @@ func RunInline(opts Options) {
 		if pipeline.Headers == nil {
 			pipeline.Headers = make(map[string]interface{})
 		}
-		pipeline.Headers["Authorization"] = "Bearer " + opts.Token
+		pipeline.Headers["Authorization"] = "bearer " + opts.Token
 	}
 
 	dummyConfig := &cmd.Structure{
