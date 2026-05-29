@@ -6,16 +6,6 @@ import (
 	"github.com/Jeffail/gabs/v2"
 )
 
-// APIStructure defines all the elements that a pipeline body can contain
-type APIStructure struct {
-	Method             string
-	Endpoint           string
-	Body               any
-	ExpectedStatusCode int
-	ExpectedBody       any
-	Headers            any
-}
-
 // APIResponse defines all the elements that a request response will contain
 type APIResponse struct {
 	StatusCode int
@@ -25,17 +15,17 @@ type APIResponse struct {
 // Credentials contains all the login properties
 // with respect to the 3 different environments
 type Credentials struct {
-	Development any `yaml:"development" json:"development"`
-	Staging any `yaml:"staging" json:"staging"`
-	Production any `yaml:"production" json:"production"`
+	Development PipelineBody `yaml:"development" json:"development"`
+	Staging     PipelineBody `yaml:"staging" json:"staging"`
+	Production  PipelineBody `yaml:"production" json:"production"`
 }
 
-// Environments are all the different envs that user
+// Environment are all the different envs that user
 // could mention in defining baseUrl and credentials
-type Environments struct {
+type Environment struct {
 	Development string `yaml:"development" json:"development"`
-	Staging string `yaml:"staging" json:"staging"`
-	Production string `yaml:"production" json:"production"`
+	Staging     string `yaml:"staging" json:"staging"`
+	Production  string `yaml:"production" json:"production"`
 }
 
 // LoginDetails are used to tell the program
@@ -43,31 +33,53 @@ type Environments struct {
 // 2. what type of auth is it
 // 3. where is the token found in response
 type LoginDetails struct {
-	Route string `yaml:"route" json:"route"`
+	Route         string `yaml:"route" json:"route"`
 	TokenLocation string `yaml:"token_location" json:"token_location"`
-	Token string 
+	TestingRoute  string `yaml:"testing_route" json:"testing_route"`
+	Token         string
 }
 
 // PipelineBody are all the elements that are sent by the
 // user from the configuration file
 type PipelineBody struct {
-	Method string `yaml:"method" json:"method"`
-	Endpoint string `yaml:"endpoint" json:"endpoint"`
-	Body any `yaml:"body" json:"body"`
-	Headers any `yaml:"headers" json:"headers"`
-	ExpectedStatusCode int `yaml:"expectedStatusCode" json:"expectedStatusCode"`
-	ExpectedBody any `yaml:"expectedBody" json:"expectedBody"`
+	Method             string         `yaml:"method" json:"method"`
+	Endpoint           string         `yaml:"endpoint" json:"endpoint"`
+	Body               any            `yaml:"body" json:"body"`
+	Headers            map[string]any `yaml:"headers" json:"headers"`
+	ExpectedStatusCode int            `yaml:"expectedStatusCode" json:"expectedStatusCode"`
+	ExpectedBody       any            `yaml:"expectedBody" json:"expectedBody"`
+	BaseURL            string         `yaml:"baseUrl" json:"baseUrl"`
+	Protocol           string         `yaml:"protocol" json:"protocol"`
+	Timeout            int            `yaml:"timeout" json:"timeout"`
+}
+
+// PipelineGlobals contains properties that are used by both the
+// current and custom pipelines
+type PipelineGlobals struct {
+	Headers map[string]any `yaml:"headers" json:"headers"`
+}
+
+// CurrentPipeline has the current pipeline specific properties
+type CurrentPipeline struct {
+	Globals  PipelineGlobals `yaml:"globals" json:"globals"`
+	Pipeline []PipelineBody  `yaml:"pipeline" json:"pipeline"`
+}
+
+// CustomPipeline has the custom pipeline specific properties
+type CustomPipeline struct {
+	Globals  PipelineGlobals        `yaml:"globals" json:"globals"`
+	Pipeline map[string]interface{} `yaml:"pipeline" json:"pipeline"`
 }
 
 // Structure defines the overall structure of the json or yaml
 // configuration file
 type Structure struct {
-	BaseURL Environments `yaml:"baseUrl" json:"baseUrl"`
-	Credentials Credentials `yaml:"credentials" json:"credentials"`
-	LoginDetails LoginDetails `yaml:"loginDetails" json:"loginDetails"`
-	PipelineBody []PipelineBody `yaml:"current_pipeline" json:"current_pipeline"`
-	CustomPipelines map[string]interface{} `yaml:"custom_pipelines" json:"custom_pipelines"`
-	ActiveURL string
+	BaseURL           Environment     `yaml:"baseUrl" json:"baseUrl"`
+	Credentials       Credentials     `yaml:"credentials" json:"credentials"`
+	LoginDetails      LoginDetails    `yaml:"loginDetails" json:"loginDetails"`
+	CurrentPipeline   CurrentPipeline `yaml:"current_pipeline" json:"current_pipeline"`
+	CustomPipelines   CustomPipeline  `yaml:"custom_pipelines" json:"custom_pipelines"`
+	ActiveURL         string
 	ActiveEnvironment string
 }
 
@@ -86,6 +98,53 @@ type FileReaderContext struct {
 	strategy FileReaderStrategy
 }
 
+// Constructors that support Factory Pattern in Golang for each of the Struct
+// above. The benefit to this is, we don't have to worry about defaults and checking
+// them in each of the function
+
+// NewEnvironment is a constructor for Environment
+func NewEnvironment(env *Environment) *Environment {
+	return env
+}
+
+// NewLoginDetails is a constructor for LoginDetails
+func NewLoginDetails(loginDetails *LoginDetails) *LoginDetails {
+	if loginDetails.Route == "" {
+		loginDetails.Route = "/login"
+	}
+	if loginDetails.TokenLocation == "" {
+		loginDetails.TokenLocation = "data.access_token"
+	}
+
+	return loginDetails
+}
+
+// NewPipelineBody is a constructor for PipelineBody
+func NewPipelineBody(pipelineBody *PipelineBody) *PipelineBody {
+	if pipelineBody.Method == "" {
+		pipelineBody.Method = "GET"
+	}
+
+	if pipelineBody.Protocol == "" {
+		pipelineBody.Protocol = "HTTP"
+	}
+
+	if pipelineBody.Timeout == 0 {
+		pipelineBody.Timeout = 10
+	}
+
+	if pipelineBody.ExpectedStatusCode == 0 {
+
+		if pipelineBody.Method == "POST" {
+			pipelineBody.ExpectedStatusCode = 201
+		} else {
+			pipelineBody.ExpectedStatusCode = 200
+		}
+	}
+
+	return pipelineBody
+}
+
 // SetStrategy allows you to change the strategy at runtime
 func (c *FileReaderContext) SetStrategy(strategy FileReaderStrategy) {
 	c.strategy = strategy
@@ -98,37 +157,49 @@ func (c *FileReaderContext) ReadInstructions(filepath string) (*Structure, error
 	}
 
 	structure, err := c.strategy.ReadInstructions(filepath)
-	if err != nil { return nil, fmt.Errorf("Could not call strategy") }
+	if err != nil {
+		return nil, err
+	}
 
 	return structure, nil
 }
 
 // Login delegates the reading task to the strategy
 func (c *FileReaderContext) Login(fileContents *Structure) {
-	if c.strategy == nil { fmt.Println("strategy not set"); return }
+	if c.strategy == nil {
+		fmt.Println("strategy not set")
+		return
+	}
 
 	c.strategy.Login(fileContents)
 }
 
 // CallCurrentPipeline call Current pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallCurrentPipeline(fileContents *Structure) {
-	if c.strategy == nil { fmt.Println("strategy not set"); return }
+	if c.strategy == nil {
+		fmt.Println("strategy not set")
+		return
+	}
 
 	c.strategy.CallCurrentPipeline(fileContents)
 }
 
 // CallCustomPipelines call custom pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallCustomPipelines(fileContents *Structure) {
-	if c.strategy == nil { fmt.Println("strategy not set"); return }
+	if c.strategy == nil {
+		fmt.Println("strategy not set")
+		return
+	}
 
 	c.strategy.CallCustomPipelines(fileContents)
 }
 
 // CallSingleCustomPipeline calls All pipeline delegates the reading task to the strategy
 func (c *FileReaderContext) CallSingleCustomPipeline(fileContents *Structure, pipelineKey string) {
-	if c.strategy == nil { fmt.Println("strategy not set"); return }
+	if c.strategy == nil {
+		fmt.Println("strategy not set")
+		return
+	}
 
 	c.strategy.CallSingleCustomPipeline(fileContents, pipelineKey)
 }
-
-

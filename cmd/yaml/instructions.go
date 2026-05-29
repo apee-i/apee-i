@@ -9,24 +9,30 @@ import (
 	y "gopkg.in/yaml.v3"
 )
 
-// Reader purpose is just to allow the programmer to make selection for YAML
-type Reader struct {}
+// Strategy purpose is just to allow the programmer to make selection for YAML
+type Strategy struct{}
 
 // ReadInstructions decodes and stores all the instructions from the configuration
 // file in the state of the program
-func (r *Reader) ReadInstructions(filepath string) (*cmd.Structure, error) {
-	
+func (r *Strategy) ReadInstructions(filepath string) (*cmd.Structure, error) {
+
 	file, err := os.Open(filepath)
-	if err != nil { return &cmd.Structure{}, fmt.Errorf("Could not open file") }
+	if err != nil {
+		return &cmd.Structure{}, fmt.Errorf("Could not open file")
+	}
 
 	defer file.Close()
 
 	fileRawContents, err := io.ReadAll(file)
-	if err != nil { return &cmd.Structure{}, fmt.Errorf("Could not read file contents") }
-	
+	if err != nil {
+		return &cmd.Structure{}, fmt.Errorf("Could not read file contents")
+	}
+
 	fileContents := new(cmd.Structure)
 	err = y.Unmarshal(fileRawContents, &fileContents)
-	if err != nil { return &cmd.Structure{}, fmt.Errorf("Could not map elements in yaml") }
+	if err != nil {
+		return &cmd.Structure{}, err
+	}
 
 	return fileContents, nil
 }
